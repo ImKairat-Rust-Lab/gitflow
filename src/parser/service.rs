@@ -1,6 +1,10 @@
 use anyhow::Result;
-use crate::parser::models::{
-    GitFlowCommands, InitArgs, FeatureAction, ReleaseAction, 
+use clap::CommandFactory;
+use clap_complete::generate;
+use std::io;
+
+use crate::parser::{
+    Cli, GitFlowCommands, InitArgs, FeatureAction, ReleaseAction, 
     HotfixAction, SupportAction, BugfixAction, Execute
 };
 
@@ -13,6 +17,12 @@ impl Execute for GitFlowCommands {
             Self::Hotfix { action } => action.execute(),
             Self::Support { action } => action.execute(),
             Self::Bugfix { action } => action.execute(),
+            Self::Completions { shell } => {
+                let mut cmd = Cli::command();
+                let bin_name = cmd.get_name().to_string();
+                generate(shell, &mut cmd, bin_name, &mut io::stdout());
+                Ok(())
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 use clap::{Args, Parser, Subcommand};
+use clap_complete::Shell;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -46,6 +47,13 @@ pub enum GitFlowCommands {
     Bugfix {
         #[command(subcommand)]
         action: BugfixAction,
+    },
+
+    /// Generate shell completions
+    Completions {
+        /// The shell to generate completions for
+        #[arg(value_enum)]
+        shell: Shell,
     },
 }
 

@@ -1,6 +1,8 @@
 use clap::{Args, Parser, Subcommand};
 use clap_complete::Shell;
 
+use crate::error::AppError;
+
 #[derive(Parser, Debug)]
 #[command(
     name = "gitflow",
@@ -209,5 +211,5 @@ pub enum BugfixAction {
 }
 
 pub trait Execute {
-    fn execute(self) -> anyhow::Result<()>;
+    fn execute(self) -> anyhow::Result<(), AppError>;
 }

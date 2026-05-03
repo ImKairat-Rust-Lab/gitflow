@@ -3,7 +3,7 @@ use clap::CommandFactory;
 use clap_complete::generate;
 use std::io;
 
-use crate::parser::{
+use crate::cli::{
     Cli, GitFlowCommands, InitArgs, FeatureAction, ReleaseAction, 
     HotfixAction, SupportAction, BugfixAction, Execute
 };

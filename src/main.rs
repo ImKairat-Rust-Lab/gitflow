@@ -1,11 +1,13 @@
+mod cli;
+mod git;
+mod error;
+mod commands;
 use clap::Parser;
+use crate::cli::Execute;
 
-use crate::parser::Execute;
-
-mod parser;
 
 fn main() -> anyhow::Result<()> {
-    let args = parser::Cli::parse();
+    let args = cli::Cli::parse();
 
     args.command.execute()?;
 

@@ -1,7 +1,7 @@
 #![allow(unused_imports)]
 
 mod models;
-mod service;
+mod parser;
 
-pub use service::*;
+pub use parser::*;
 pub use models::*;

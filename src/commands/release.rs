@@ -1,8 +1,41 @@
-use crate::cli::{Execute, ReleaseAction};
+use crate::cli::Execute;
 use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
+use crate::commands::common::{CommonFinishFlags, TaggingFlags};
+use clap::Subcommand;
 use tracing::info;
+
+#[derive(Subcommand, Debug)]
+pub enum ReleaseAction {
+    Start {
+        version: String,
+        base: Option<String>,
+    },
+    Finish {
+        #[command(flatten)]
+        common: CommonFinishFlags,
+
+        #[command(flatten)]
+        tagging: TaggingFlags,
+
+        /// Push to remote after finishing
+        #[arg(short = 'p', long)]
+        push: bool,
+
+        version: String,
+    },
+    Publish {
+        version: String,
+    },
+    Delete {
+        #[arg(short = 'f', long)]
+        force: bool,
+        #[arg(short = 'r', long)]
+        remote: bool,
+        version: String,
+    },
+}
 
 impl Execute for ReleaseAction {
     fn execute(self) -> Result<(), AppError> {

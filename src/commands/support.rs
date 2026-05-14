@@ -1,8 +1,15 @@
-use crate::cli::{Execute, SupportAction};
+use crate::cli::Execute;
 use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
+use clap::Subcommand;
 use tracing::info;
+
+#[derive(Subcommand, Debug)]
+pub enum SupportAction {
+    /// Start a new support branch
+    Start { version: String, base: String },
+}
 
 impl Execute for SupportAction {
     fn execute(self) -> Result<(), AppError> {

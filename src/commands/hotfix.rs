@@ -1,8 +1,30 @@
-use crate::cli::{Execute, HotfixAction};
+use crate::cli::Execute;
 use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
+use crate::commands::common::{CommonFinishFlags, TaggingFlags};
+use clap::Subcommand;
 use tracing::info;
+
+#[derive(Subcommand, Debug)]
+pub enum HotfixAction {
+    Start {
+        version: String,
+        base: Option<String>,
+    },
+    Finish {
+        #[command(flatten)]
+        common: CommonFinishFlags,
+
+        #[command(flatten)]
+        tagging: TaggingFlags,
+
+        #[arg(short = 'p', long)]
+        push: bool,
+
+        version: String,
+    },
+}
 
 impl Execute for HotfixAction {
     fn execute(self) -> Result<(), AppError> {

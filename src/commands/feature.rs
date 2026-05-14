@@ -1,8 +1,61 @@
-use crate::cli::{Execute, FeatureAction};
+use crate::cli::Execute;
 use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
+use crate::commands::common::CommonFinishFlags;
+use clap::Subcommand;
 use tracing::info;
+
+#[derive(Subcommand, Debug)]
+pub enum FeatureAction {
+    /// Start a new feature branch
+    Start {
+        name: String,
+        base: Option<String>,
+    },
+    /// Finish a feature branch
+    Finish {
+        #[command(flatten)]
+        common: CommonFinishFlags,
+
+        /// Rebase instead of merge
+        #[arg(short = 'r', long, conflicts_with = "squash")]
+        rebase: bool,
+
+        /// Squash feature during merge
+        #[arg(short = 'S', long, conflicts_with = "rebase")]
+        squash: bool,
+
+        /// Force delete feature branch after finish
+        #[arg(short = 'D', long)]
+        force_delete: bool,
+
+        name: String,
+    },
+    Publish {
+        name: String,
+    },
+    Track {
+        name: String,
+    },
+    /// Pull changes from remote feature branch
+    Pull {
+        name: String,
+    },
+    /// List all feature branches
+    List {
+        /// List remote branches as well
+        #[arg(short = 'r', long)]
+        remote: bool,
+    },
+    Delete {
+        #[arg(short = 'f', long)]
+        force: bool,
+        #[arg(short = 'r', long)]
+        remote: bool,
+        name: String,
+    },
+}
 
 impl Execute for FeatureAction {
     fn execute(self) -> Result<(), AppError> {

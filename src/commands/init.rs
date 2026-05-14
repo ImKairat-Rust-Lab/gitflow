@@ -1,8 +1,20 @@
-use crate::cli::{Execute, InitArgs};
+use crate::cli::Execute;
 use crate::error::AppError;
 use crate::git;
+use clap::Args;
 use dialoguer::Input;
 use tracing::info;
+
+#[derive(Args, Debug)]
+pub struct InitArgs {
+    /// Use default branch naming conventions
+    #[arg(short = 'd', long)]
+    pub default: bool,
+
+    /// Force setting of gitflow branches, even if already configured
+    #[arg(short = 'f', long)]
+    pub force: bool,
+}
 
 impl Execute for InitArgs {
     /// Entry point for the `init` command.

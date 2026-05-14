@@ -1,8 +1,27 @@
-use crate::cli::{BugfixAction, Execute};
+use crate::cli::Execute;
 use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
+use crate::commands::common::CommonFinishFlags;
+use clap::Subcommand;
 use tracing::info;
+
+#[derive(Subcommand, Debug)]
+pub enum BugfixAction {
+    Start {
+        name: String,
+        base: Option<String>,
+    },
+    Finish {
+        #[command(flatten)]
+        common: CommonFinishFlags,
+
+        #[arg(short = 'r', long)]
+        rebase: bool,
+
+        name: String,
+    },
+}
 
 impl Execute for BugfixAction {
     fn execute(self) -> Result<(), AppError> {

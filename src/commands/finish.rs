@@ -1,4 +1,6 @@
-use crate::cli::{Execute, FeatureAction, ReleaseAction, HotfixAction, BugfixAction, CommonFinishFlags, TaggingFlags};
+use crate::cli::Execute;
+use crate::commands::{FeatureAction, ReleaseAction, HotfixAction, BugfixAction};
+use crate::commands::common::{CommonFinishFlags, TaggingFlags};
 use crate::error::AppError;
 use crate::git;
 use crate::config::GitFlowConfig;

@@ -1,8 +1,41 @@
-use crate::cli::{Execute, ReleaseAction};
+use crate::cli::Execute;
+use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
-use crate::config::GitFlowConfig;
+use crate::commands::common::{CommonFinishFlags, TaggingFlags};
+use clap::Subcommand;
 use tracing::info;
+
+#[derive(Subcommand, Debug)]
+pub enum ReleaseAction {
+    Start {
+        version: String,
+        base: Option<String>,
+    },
+    Finish {
+        #[command(flatten)]
+        common: CommonFinishFlags,
+
+        #[command(flatten)]
+        tagging: TaggingFlags,
+
+        /// Push to remote after finishing
+        #[arg(short = 'p', long)]
+        push: bool,
+
+        version: String,
+    },
+    Publish {
+        version: String,
+    },
+    Delete {
+        #[arg(short = 'f', long)]
+        force: bool,
+        #[arg(short = 'r', long)]
+        remote: bool,
+        version: String,
+    },
+}
 
 impl Execute for ReleaseAction {
     fn execute(self) -> Result<(), AppError> {
@@ -12,13 +45,32 @@ impl Execute for ReleaseAction {
             Self::Start { version, base } => {
                 let base = base.unwrap_or_else(|| config.develop_branch.clone());
                 let branch_name = format!("{}{}", config.release_prefix, version);
-                
+
+                git::run_hook("pre-flow-release-start", &[&version, &base])?;
+
                 info!("Starting release: {}", version);
                 git::run_git_silent(&["checkout", "-b", &branch_name, &base], false)?;
+
+                git::run_hook("post-flow-release-start", &[&version, &base])?;
             }
-            Self::Finish { version, common, tagging, push } => {
+            Self::Finish {
+                version,
+                common,
+                tagging,
+                push,
+            } => {
                 let branch_name = format!("{}{}", config.release_prefix, version);
                 let tag_name = format!("{}{}", config.version_tag_prefix, version);
+
+                // Workspace safety check
+                if !git::is_working_tree_clean()? {
+                    return Err(AppError::Config(
+                        "Working tree is not clean. Commit or stash your changes first."
+                            .to_string(),
+                    ));
+                }
+
+                git::run_hook("pre-flow-release-finish", &[&version])?;
 
                 if common.fetch {
                     git::run_git_silent(&["fetch", "origin"], false)?;
@@ -34,12 +86,14 @@ impl Execute for ReleaseAction {
                     if tagging.sign {
                         tag_args.push("-s".to_string());
                     }
-                    
-                    let msg = tagging.message.unwrap_or_else(|| format!("Release {}", version));
+
+                    let msg = tagging
+                        .message
+                        .unwrap_or_else(|| format!("Release {}", version));
                     tag_args.push("-m".to_string());
                     tag_args.push(msg);
                     tag_args.push(tag_name.clone());
-                    
+
                     let tag_args_refs: Vec<&str> = tag_args.iter().map(|s| s.as_str()).collect();
                     git::run_git_silent(&tag_args_refs, false)?;
                 }
@@ -61,16 +115,25 @@ impl Execute for ReleaseAction {
                     }
                 }
 
-                info!("Release '{}' finished. Merged into '{}' and '{}'.", version, config.main_branch, config.develop_branch);
+                info!(
+                    "Release '{}' finished. Merged into '{}' and '{}'.",
+                    version, config.main_branch, config.develop_branch
+                );
+
+                git::run_hook("post-flow-release-finish", &[&version])?;
             }
             Self::Publish { version } => {
                 let branch_name = format!("{}{}", config.release_prefix, version);
                 git::run_git_silent(&["push", "-u", "origin", &branch_name], false)?;
                 info!("Release '{}' published to origin", version);
             }
-            Self::Delete { version, force, remote } => {
+            Self::Delete {
+                version,
+                force,
+                remote,
+            } => {
                 let branch_name = format!("{}{}", config.release_prefix, version);
-                
+
                 if remote {
                     git::run_git_silent(&["push", "origin", "--delete", &branch_name], false)?;
                 }

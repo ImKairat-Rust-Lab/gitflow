@@ -1,6 +1,5 @@
-use std::process::{Command, Stdio};
 use crate::error::AppError;
-
+use std::process::{Command, Stdio};
 
 pub fn run_git(args: &[&str], dry_run: bool) -> Result<String, AppError> {
     if dry_run {
@@ -15,7 +14,7 @@ pub fn run_git(args: &[&str], dry_run: bool) -> Result<String, AppError> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()
-        .map_err(|e| AppError::IoError(e))?;
+        .map_err(AppError::IoError)?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -33,25 +32,4 @@ pub fn run_git(args: &[&str], dry_run: bool) -> Result<String, AppError> {
 pub fn run_git_silent(args: &[&str], dry_run: bool) -> Result<(), AppError> {
     run_git(args, dry_run)?;
     Ok(())
-}
-
-pub fn is_git_repo() -> bool {
-    run_git(&["rev-parse", "--git-dir"], false).is_ok()
-}
-
-pub fn current_branch() -> Result<String, AppError> {
-    run_git(&["rev-parse", "--abbrev-ref", "HEAD"], false)
-}
-
-pub fn is_working_tree_clean() -> Result<bool, AppError> {
-    let output = run_git(&["status", "--porcelain"], false)?;
-    Ok(output.is_empty())
-}
-
-pub fn branch_exists(name: &str) -> bool {
-    run_git(&["rev-parse", "--verify", &format!("refs/heads/{}", name)], false).is_ok()
-}
-
-pub fn git_config_get(key: &str) -> Option<String> {
-    run_git(&["config", "--get", key], false).ok().filter(|s| !s.is_empty())
 }

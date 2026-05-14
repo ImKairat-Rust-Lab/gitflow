@@ -1,8 +1,27 @@
-use crate::cli::{Execute, BugfixAction};
+use crate::cli::Execute;
+use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
-use crate::config::GitFlowConfig;
+use crate::commands::common::CommonFinishFlags;
+use clap::Subcommand;
 use tracing::info;
+
+#[derive(Subcommand, Debug)]
+pub enum BugfixAction {
+    Start {
+        name: String,
+        base: Option<String>,
+    },
+    Finish {
+        #[command(flatten)]
+        common: CommonFinishFlags,
+
+        #[arg(short = 'r', long)]
+        rebase: bool,
+
+        name: String,
+    },
+}
 
 impl Execute for BugfixAction {
     fn execute(self) -> Result<(), AppError> {
@@ -12,13 +31,31 @@ impl Execute for BugfixAction {
             Self::Start { name, base } => {
                 let base = base.unwrap_or_else(|| config.develop_branch.clone());
                 let branch_name = format!("{}{}", config.bugfix_prefix, name);
-                
+
+                git::run_hook("pre-flow-bugfix-start", &[&name, &base])?;
+
                 info!("Starting bugfix: {}", name);
                 git::run_git_silent(&["checkout", "-b", &branch_name, &base], false)?;
+
+                git::run_hook("post-flow-bugfix-start", &[&name, &base])?;
             }
-            Self::Finish { name, common, rebase } => {
+            Self::Finish {
+                name,
+                common,
+                rebase,
+            } => {
                 let branch_name = format!("{}{}", config.bugfix_prefix, name);
-                
+
+                // Workspace safety check
+                if !git::is_working_tree_clean()? {
+                    return Err(AppError::Config(
+                        "Working tree is not clean. Commit or stash your changes first."
+                            .to_string(),
+                    ));
+                }
+
+                git::run_hook("pre-flow-bugfix-finish", &[&name])?;
+
                 if common.fetch {
                     git::run_git_silent(&["fetch", "origin"], false)?;
                 }
@@ -35,7 +72,12 @@ impl Execute for BugfixAction {
                     git::run_git_silent(&["branch", "-d", &branch_name], false)?;
                 }
 
-                info!("Bugfix '{}' finished and merged into '{}'", name, config.develop_branch);
+                info!(
+                    "Bugfix '{}' finished and merged into '{}'",
+                    name, config.develop_branch
+                );
+
+                git::run_hook("post-flow-bugfix-finish", &[&name])?;
             }
         }
         Ok(())

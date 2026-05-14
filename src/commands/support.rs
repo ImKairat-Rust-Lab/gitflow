@@ -1,7 +1,7 @@
 use crate::cli::{Execute, SupportAction};
+use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
-use crate::config::GitFlowConfig;
 use tracing::info;
 
 impl Execute for SupportAction {
@@ -11,9 +11,13 @@ impl Execute for SupportAction {
         match self {
             Self::Start { version, base } => {
                 let branch_name = format!("{}{}", config.support_prefix, version);
-                
+
+                git::run_hook("pre-flow-support-start", &[&version, &base])?;
+
                 info!("Starting support branch: {}", version);
                 git::run_git_silent(&["checkout", "-b", &branch_name, &base], false)?;
+
+                git::run_hook("post-flow-support-start", &[&version, &base])?;
             }
         }
         Ok(())

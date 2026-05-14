@@ -1,7 +1,7 @@
 use crate::cli::{Execute, FeatureAction};
+use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
-use crate::config::GitFlowConfig;
 use tracing::info;
 
 impl Execute for FeatureAction {
@@ -12,14 +12,34 @@ impl Execute for FeatureAction {
             Self::Start { name, base } => {
                 let base = base.unwrap_or_else(|| config.develop_branch.clone());
                 let branch_name = format!("{}{}", config.feature_prefix, name);
-                
+
+                git::run_hook("pre-flow-feature-start", &[&name, &base])?;
+
                 info!("Starting feature: {}", name);
                 git::run_git_silent(&["checkout", "-b", &branch_name, &base], false)?;
                 info!("Switched to a new branch '{}'", branch_name);
+
+                git::run_hook("post-flow-feature-start", &[&name, &base])?;
             }
-            Self::Finish { name, common, rebase, squash, force_delete } => {
+            Self::Finish {
+                name,
+                common,
+                rebase,
+                squash,
+                force_delete,
+            } => {
                 let branch_name = format!("{}{}", config.feature_prefix, name);
-                
+
+                // Workspace safety check
+                if !git::is_working_tree_clean()? {
+                    return Err(AppError::Config(
+                        "Working tree is not clean. Commit or stash your changes first."
+                            .to_string(),
+                    ));
+                }
+
+                git::run_hook("pre-flow-feature-finish", &[&name])?;
+
                 if common.fetch {
                     git::run_git_silent(&["fetch", "origin"], false)?;
                 }
@@ -32,7 +52,10 @@ impl Execute for FeatureAction {
                     git::run_git_silent(&["rebase", &branch_name], false)?;
                 } else if squash {
                     git::run_git_silent(&["merge", "--squash", &branch_name], false)?;
-                    git::run_git_silent(&["commit", "-m", &format!("Finish feature {}", name)], false)?;
+                    git::run_git_silent(
+                        &["commit", "-m", &format!("Finish feature {}", name)],
+                        false,
+                    )?;
                 } else {
                     git::run_git_silent(&["merge", "--no-ff", &branch_name], false)?;
                 }
@@ -43,21 +66,64 @@ impl Execute for FeatureAction {
                     git::run_git_silent(&["branch", delete_flag, &branch_name], false)?;
                 }
 
-                info!("Feature '{}' finished and merged into '{}'", name, config.develop_branch);
+                info!(
+                    "Feature '{}' finished and merged into '{}'",
+                    name, config.develop_branch
+                );
+
+                git::run_hook("post-flow-feature-finish", &[&name])?;
             }
             Self::Publish { name } => {
                 let branch_name = format!("{}{}", config.feature_prefix, name);
+                git::run_hook("pre-flow-feature-publish", &[&name])?;
+
                 git::run_git_silent(&["push", "-u", "origin", &branch_name], false)?;
                 info!("Feature '{}' published to origin", name);
+
+                git::run_hook("post-flow-feature-publish", &[&name])?;
             }
             Self::Track { name } => {
                 let branch_name = format!("{}{}", config.feature_prefix, name);
-                git::run_git_silent(&["checkout", "-b", &branch_name, &format!("origin/{}", branch_name)], false)?;
+                git::run_git_silent(
+                    &[
+                        "checkout",
+                        "-b",
+                        &branch_name,
+                        &format!("origin/{}", branch_name),
+                    ],
+                    false,
+                )?;
                 info!("Now tracking feature '{}' from origin", name);
             }
-            Self::Delete { name, force, remote } => {
+            Self::Pull { name } => {
                 let branch_name = format!("{}{}", config.feature_prefix, name);
-                
+                git::run_git_silent(&["checkout", &branch_name], false)?;
+                git::run_git_silent(&["pull", "origin", &branch_name], false)?;
+                info!("Feature '{}' updated from origin", name);
+            }
+            Self::List { remote } => {
+                let prefix = if remote {
+                    format!("remotes/origin/{}", config.feature_prefix)
+                } else {
+                    config.feature_prefix.clone()
+                };
+                let branches = git::list_branches(&prefix)?;
+                if branches.is_empty() {
+                    info!("No feature branches found.");
+                } else {
+                    info!("Feature branches:");
+                    for b in branches {
+                        println!("  {}", b.trim_start_matches(&prefix));
+                    }
+                }
+            }
+            Self::Delete {
+                name,
+                force,
+                remote,
+            } => {
+                let branch_name = format!("{}{}", config.feature_prefix, name);
+
                 if remote {
                     git::run_git_silent(&["push", "origin", "--delete", &branch_name], false)?;
                     info!("Remote branch '{}' deleted", branch_name);

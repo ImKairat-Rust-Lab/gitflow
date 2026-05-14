@@ -2,9 +2,10 @@ use clap::CommandFactory;
 use clap_complete::generate;
 use std::io;
 
-use crate::{cli::{
-    Cli, Execute, GitFlowCommands
-}, error::AppError};
+use crate::{
+    cli::{Cli, Execute, GitFlowCommands},
+    error::AppError,
+};
 
 impl Execute for GitFlowCommands {
     fn execute(self) -> Result<(), AppError> {

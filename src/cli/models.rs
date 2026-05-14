@@ -20,31 +20,31 @@ pub struct Cli {
 pub enum GitFlowCommands {
     /// Initialize a new git repo with support for the branching model.
     Init(InitArgs),
-    
+
     /// Manage your feature branches.
     Feature {
         #[command(subcommand)]
         action: FeatureAction,
     },
-    
+
     /// Manage your release branches.
     Release {
         #[command(subcommand)]
         action: ReleaseAction,
     },
-    
+
     /// Manage your hotfix branches.
     Hotfix {
         #[command(subcommand)]
         action: HotfixAction,
     },
-    
+
     /// Manage your support branches.
     Support {
         #[command(subcommand)]
         action: SupportAction,
     },
-    
+
     /// Manage your bugfix branches.
     Bugfix {
         #[command(subcommand)]
@@ -59,13 +59,12 @@ pub enum GitFlowCommands {
     },
 }
 
-
 #[derive(Args, Debug)]
 pub struct CommonFinishFlags {
     /// Fetch from origin before performing finish
     #[arg(short = 'F', long)]
     pub fetch: bool,
-    
+
     /// Keep branch after performing finish
     #[arg(short = 'k', long)]
     pub keep: bool,
@@ -76,23 +75,22 @@ pub struct TaggingFlags {
     /// Sign the tag cryptographically (GPG)
     #[arg(short = 's', long)]
     pub sign: bool,
-    
+
     /// Use the given tag message
     #[arg(short = 'm', long)]
     pub message: Option<String>,
-    
+
     /// Don't tag this release
     #[arg(short = 'n', long)]
     pub notag: bool,
 }
-
 
 #[derive(Args, Debug)]
 pub struct InitArgs {
     /// Use default branch naming conventions
     #[arg(short = 'd', long)]
     pub default: bool,
-    
+
     /// Force setting of gitflow branches, even if already configured
     #[arg(short = 'f', long)]
     pub force: bool,
@@ -109,23 +107,37 @@ pub enum FeatureAction {
     Finish {
         #[command(flatten)]
         common: CommonFinishFlags,
-        
+
         /// Rebase instead of merge
         #[arg(short = 'r', long, conflicts_with = "squash")]
         rebase: bool,
-        
+
         /// Squash feature during merge
         #[arg(short = 'S', long, conflicts_with = "rebase")]
         squash: bool,
-        
+
         /// Force delete feature branch after finish
         #[arg(short = 'D', long)]
         force_delete: bool,
-        
+
         name: String,
     },
-    Publish { name: String },
-    Track { name: String },
+    Publish {
+        name: String,
+    },
+    Track {
+        name: String,
+    },
+    /// Pull changes from remote feature branch
+    Pull {
+        name: String,
+    },
+    /// List all feature branches
+    List {
+        /// List remote branches as well
+        #[arg(short = 'r', long)]
+        remote: bool,
+    },
     Delete {
         #[arg(short = 'f', long)]
         force: bool,
@@ -144,17 +156,19 @@ pub enum ReleaseAction {
     Finish {
         #[command(flatten)]
         common: CommonFinishFlags,
-        
+
         #[command(flatten)]
         tagging: TaggingFlags,
-        
+
         /// Push to remote after finishing
         #[arg(short = 'p', long)]
         push: bool,
-        
+
         version: String,
     },
-    Publish { version: String },
+    Publish {
+        version: String,
+    },
     Delete {
         #[arg(short = 'f', long)]
         force: bool,
@@ -173,13 +187,13 @@ pub enum HotfixAction {
     Finish {
         #[command(flatten)]
         common: CommonFinishFlags,
-        
+
         #[command(flatten)]
         tagging: TaggingFlags,
-        
+
         #[arg(short = 'p', long)]
         push: bool,
-        
+
         version: String,
     },
 }
@@ -187,10 +201,7 @@ pub enum HotfixAction {
 #[derive(Subcommand, Debug)]
 pub enum SupportAction {
     /// Start a new support branch
-    Start {
-        version: String,
-        base: String,
-    },
+    Start { version: String, base: String },
 }
 
 #[derive(Subcommand, Debug)]
@@ -202,10 +213,10 @@ pub enum BugfixAction {
     Finish {
         #[command(flatten)]
         common: CommonFinishFlags,
-        
+
         #[arg(short = 'r', long)]
         rebase: bool,
-        
+
         name: String,
     },
 }

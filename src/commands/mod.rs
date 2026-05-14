@@ -1,14 +1,14 @@
 #![allow(unused_imports)]
-mod init;
-mod feature;
-mod release;
-mod hotfix;
 mod bugfix;
+mod feature;
+mod hotfix;
+mod init;
+mod release;
 mod support;
 
-pub use init::*;
-pub use feature::*;
-pub use release::*;
-pub use hotfix::*;
 pub use bugfix::*;
+pub use feature::*;
+pub use hotfix::*;
+pub use init::*;
+pub use release::*;
 pub use support::*;

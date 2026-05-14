@@ -3,5 +3,5 @@
 mod models;
 mod parser;
 
-pub use parser::*;
 pub use models::*;
+pub use parser::*;

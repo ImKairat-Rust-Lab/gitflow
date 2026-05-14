@@ -1,7 +1,7 @@
 use crate::cli::{Execute, HotfixAction};
+use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
-use crate::config::GitFlowConfig;
 use tracing::info;
 
 impl Execute for HotfixAction {
@@ -12,13 +12,32 @@ impl Execute for HotfixAction {
             Self::Start { version, base } => {
                 let base = base.unwrap_or_else(|| config.main_branch.clone());
                 let branch_name = format!("{}{}", config.hotfix_prefix, version);
-                
+
+                git::run_hook("pre-flow-hotfix-start", &[&version, &base])?;
+
                 info!("Starting hotfix: {}", version);
                 git::run_git_silent(&["checkout", "-b", &branch_name, &base], false)?;
+
+                git::run_hook("post-flow-hotfix-start", &[&version, &base])?;
             }
-            Self::Finish { version, common, tagging, push } => {
+            Self::Finish {
+                version,
+                common,
+                tagging,
+                push,
+            } => {
                 let branch_name = format!("{}{}", config.hotfix_prefix, version);
                 let tag_name = format!("{}{}", config.version_tag_prefix, version);
+
+                // Workspace safety check
+                if !git::is_working_tree_clean()? {
+                    return Err(AppError::Config(
+                        "Working tree is not clean. Commit or stash your changes first."
+                            .to_string(),
+                    ));
+                }
+
+                git::run_hook("pre-flow-hotfix-finish", &[&version])?;
 
                 if common.fetch {
                     git::run_git_silent(&["fetch", "origin"], false)?;
@@ -34,12 +53,14 @@ impl Execute for HotfixAction {
                     if tagging.sign {
                         tag_args.push("-s".to_string());
                     }
-                    
-                    let msg = tagging.message.unwrap_or_else(|| format!("Hotfix {}", version));
+
+                    let msg = tagging
+                        .message
+                        .unwrap_or_else(|| format!("Hotfix {}", version));
                     tag_args.push("-m".to_string());
                     tag_args.push(msg);
                     tag_args.push(tag_name.clone());
-                    
+
                     let tag_args_refs: Vec<&str> = tag_args.iter().map(|s| s.as_str()).collect();
                     git::run_git_silent(&tag_args_refs, false)?;
                 }
@@ -61,7 +82,12 @@ impl Execute for HotfixAction {
                     }
                 }
 
-                info!("Hotfix '{}' finished. Merged into '{}' and '{}'.", version, config.main_branch, config.develop_branch);
+                info!(
+                    "Hotfix '{}' finished. Merged into '{}' and '{}'.",
+                    version, config.main_branch, config.develop_branch
+                );
+
+                git::run_hook("post-flow-hotfix-finish", &[&version])?;
             }
         }
         Ok(())

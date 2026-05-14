@@ -1,11 +1,11 @@
 mod cli;
-mod git;
-mod error;
 mod commands;
 mod config;
+mod error;
+mod git;
 
-use clap::Parser;
 use crate::cli::Execute;
+use clap::Parser;
 
 fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();

@@ -18,24 +18,24 @@ impl GitFlowConfig {
     /// Load the gitflow configuration from the local git config.
     /// Returns an error if the repository hasn't been initialized with `gitflow init`.
     pub fn load() -> Result<Self, AppError> {
-        let get = |key: &str| -> Result<String, AppError> {
-            git::git_config_get(key).ok_or_else(|| {
-                AppError::Config(format!(
-                    "Key '{}' not found. Run `gitflow init` first.",
-                    key
-                ))
-            })
-        };
+        let get_opt = |key: &str| git::git_config_get(key);
+        
+        let main_branch = get_opt("gitflow.branch.main")
+            .or_else(|| get_opt("gitflow.branch.master"))
+            .ok_or_else(|| AppError::Config("Could not find gitflow.branch.main or .master. Run `gitflow init` first.".into()))?;
+
+        let develop_branch = get_opt("gitflow.branch.develop")
+            .ok_or_else(|| AppError::Config("Key 'gitflow.branch.develop' not found.".into()))?;
 
         Ok(Self {
-            main_branch: get("gitflow.branch.main")?,
-            develop_branch: get("gitflow.branch.develop")?,
-            feature_prefix: get("gitflow.prefix.feature")?,
-            release_prefix: get("gitflow.prefix.release")?,
-            hotfix_prefix: get("gitflow.prefix.hotfix")?,
-            bugfix_prefix: get("gitflow.prefix.bugfix")?,
-            support_prefix: get("gitflow.prefix.support")?,
-            version_tag_prefix: get("gitflow.prefix.versiontag")?,
+            main_branch,
+            develop_branch,
+            feature_prefix: get_opt("gitflow.prefix.feature").unwrap_or_else(|| "feature/".into()),
+            release_prefix: get_opt("gitflow.prefix.release").unwrap_or_else(|| "release/".into()),
+            hotfix_prefix: get_opt("gitflow.prefix.hotfix").unwrap_or_else(|| "hotfix/".into()),
+            bugfix_prefix: get_opt("gitflow.prefix.bugfix").unwrap_or_else(|| "bugfix/".into()),
+            support_prefix: get_opt("gitflow.prefix.support").unwrap_or_else(|| "support/".into()),
+            version_tag_prefix: get_opt("gitflow.prefix.versiontag").unwrap_or_default(),
         })
     }
 }

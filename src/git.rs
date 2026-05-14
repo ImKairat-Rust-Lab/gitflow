@@ -14,7 +14,7 @@ pub fn run_git(args: &[&str], dry_run: bool) -> Result<String, AppError> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()
-        .map_err(|e| AppError::IoError(e))?;
+        .map_err(AppError::IoError)?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -105,11 +105,9 @@ pub fn list_branches(prefix: &str) -> Result<Vec<String>, AppError> {
         if let Some(name) = branch
             .name()
             .map_err(|e| AppError::Config(format!("Name error: {}", e)))?
-        {
-            if name.starts_with(prefix) {
+            && name.starts_with(prefix) {
                 result.push(name.to_string());
             }
-        }
     }
     Ok(result)
 }
@@ -123,7 +121,7 @@ pub fn run_hook(name: &str, args: &[&str]) -> Result<(), AppError> {
         let status = Command::new(&hook_path)
             .args(args)
             .status()
-            .map_err(|e| AppError::IoError(e))?;
+            .map_err(AppError::IoError)?;
 
         if !status.success() {
             return Err(AppError::Config(format!(

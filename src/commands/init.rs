@@ -51,42 +51,42 @@ impl Execute for InitArgs {
             let main = prompt(
                 "Which branch should be used for bringing forth production releases?",
                 &get_or_default("gitflow.branch.main", "main"),
-                &validator,
+                validator,
             )?;
             let develop = prompt(
                 "Which branch should be used for integration of the next release?",
                 &get_or_default("gitflow.branch.develop", "develop"),
-                &validator,
+                validator,
             )?;
             let feature = prompt(
                 "Branch prefix for features?",
                 &get_or_default("gitflow.prefix.feature", "feature/"),
-                &validator,
+                validator,
             )?;
             let bugfix = prompt(
                 "Branch prefix for bugfixes?",
                 &get_or_default("gitflow.prefix.bugfix", "bugfix/"),
-                &validator,
+                validator,
             )?;
             let release = prompt(
                 "Branch prefix for releases?",
                 &get_or_default("gitflow.prefix.release", "release/"),
-                &validator,
+                validator,
             )?;
             let hotfix = prompt(
                 "Branch prefix for hotfixes?",
                 &get_or_default("gitflow.prefix.hotfix", "hotfix/"),
-                &validator,
+                validator,
             )?;
             let support = prompt(
                 "Branch prefix for support branches?",
                 &get_or_default("gitflow.prefix.support", "support/"),
-                &validator,
+                validator,
             )?;
             let vtag = prompt(
                 "Version tag prefix?",
                 &get_or_default("gitflow.prefix.versiontag", "v"),
-                &validator,
+                validator,
             )?;
             (
                 main, develop, feature, bugfix, release, hotfix, support, vtag,

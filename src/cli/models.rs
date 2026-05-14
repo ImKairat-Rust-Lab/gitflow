@@ -51,6 +51,9 @@ pub enum GitFlowCommands {
         action: BugfixAction,
     },
 
+    /// Automatically finish the current branch (feature, release, hotfix, or bugfix)
+    Finish,
+
     /// Install the binary to ~/.local/bin and setup shell completions
     Install,
 }

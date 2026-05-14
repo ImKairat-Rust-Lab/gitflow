@@ -12,6 +12,7 @@ impl Execute for GitFlowCommands {
             Self::Hotfix { action } => action.execute(),
             Self::Support { action } => action.execute(),
             Self::Bugfix { action } => action.execute(),
+            Self::Finish => crate::commands::run_finish_auto(),
             Self::Install => crate::commands::run_install(),
         }
     }

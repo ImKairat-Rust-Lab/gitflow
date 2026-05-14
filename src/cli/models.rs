@@ -51,12 +51,8 @@ pub enum GitFlowCommands {
         action: BugfixAction,
     },
 
-    /// Generate shell completions
-    Completions {
-        /// The shell to generate completions for
-        #[arg(value_enum)]
-        shell: Shell,
-    },
+    /// Install the binary to ~/.local/bin and setup shell completions
+    Install,
 }
 
 #[derive(Args, Debug)]

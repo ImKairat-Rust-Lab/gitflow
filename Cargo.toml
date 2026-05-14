@@ -16,7 +16,7 @@ toml = { version = "1.1.2", features = ["preserve_order"] }
 directories = "6.0.0"
 which = "8.0.2"
 semver = "1.0.28"
-git2 = "0.20"
+git2 = { version = "0.20", features = ["vendored-libgit2", "vendored-openssl"] }
 
 [dev-dependencies]
 assert_cmd = "2.2.1"

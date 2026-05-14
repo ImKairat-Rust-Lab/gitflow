@@ -18,6 +18,9 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum GitFlowCommands {
+    /// Install the binary to ~/.local/bin and setup shell completions
+    Install,
+
     /// Initialize a new git repo with support for the branching model.
     Init(InitArgs),
 
@@ -53,9 +56,6 @@ pub enum GitFlowCommands {
 
     /// Automatically finish the current branch (feature, release, hotfix, or bugfix)
     Finish,
-
-    /// Install the binary to ~/.local/bin and setup shell completions
-    Install,
 }
 
 #[derive(Args, Debug)]

@@ -6,6 +6,7 @@ use crate::{
 impl Execute for GitFlowCommands {
     fn execute(self) -> Result<(), AppError> {
         match self {
+            Self::Install => crate::commands::run_install(),
             Self::Init(args) => args.execute(),
             Self::Feature { action } => action.execute(),
             Self::Release { action } => action.execute(),
@@ -13,7 +14,6 @@ impl Execute for GitFlowCommands {
             Self::Support { action } => action.execute(),
             Self::Bugfix { action } => action.execute(),
             Self::Finish => crate::commands::run_finish_auto(),
-            Self::Install => crate::commands::run_install(),
         }
     }
 }

@@ -36,7 +36,7 @@ pub fn run_git_silent(args: &[&str], dry_run: bool) -> Result<(), AppError> {
 }
 
 pub fn is_git_repo() -> bool {
-    run_git(&["rev-parse", "--git-dir"], true).is_ok()
+    run_git(&["rev-parse", "--git-dir"], false).is_ok()
 }
 
 pub fn current_branch() -> Result<String, AppError> {
@@ -49,5 +49,9 @@ pub fn is_working_tree_clean() -> Result<bool, AppError> {
 }
 
 pub fn branch_exists(name: &str) -> bool {
-    run_git(&["rev-parse", "--verify", &format!("refs/heads/{}", name)], true).is_ok()
+    run_git(&["rev-parse", "--verify", &format!("refs/heads/{}", name)], false).is_ok()
+}
+
+pub fn git_config_get(key: &str) -> Option<String> {
+    run_git(&["config", "--get", key], false).ok().filter(|s| !s.is_empty())
 }

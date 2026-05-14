@@ -12,7 +12,7 @@ impl Execute for InitArgs {
         let get_or_default = |key: &str, default: &str| -> String {
             // `git config --get` returns an error if the key doesn't exist.
             // We silently fall back to the default to avoid breaking the first run.
-            git::run_git(&["config", "--get", key], true)
+            git::run_git(&["config", "--get", key], false)
                 .unwrap_or_else(|_| default.to_string())
         };
 

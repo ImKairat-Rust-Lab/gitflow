@@ -28,23 +28,37 @@ impl Execute for InitArgs {
             }
         };
 
-        // 1. Sequential interactive prompts (matches original git-flow avh behavior)
-        let main_branch = prompt(
-            "Which branch should be used for bringing forth production releases?",
-            &get_or_default("gitflow.branch.main", "main"),
-            &validator,
-        )?;
-        let develop_branch = prompt(
-            "Which branch should be used for integration of the next release?",
-            &get_or_default("gitflow.branch.develop", "develop"),
-            &validator,
-        )?;
-        let feature_prefix = prompt("Branch prefix for features?", &get_or_default("gitflow.prefix.feature", "feature/"), &validator)?;
-        let bugfix_prefix = prompt("Branch prefix for bugfixes?", &get_or_default("gitflow.prefix.bugfix", "bugfix/"), &validator)?;
-        let release_prefix = prompt("Branch prefix for releases?", &get_or_default("gitflow.prefix.release", "release/"), &validator)?;
-        let hotfix_prefix = prompt("Branch prefix for hotfixes?", &get_or_default("gitflow.prefix.hotfix", "hotfix/"), &validator)?;
-        let support_prefix = prompt("Branch prefix for support branches?", &get_or_default("gitflow.prefix.support", "support/"), &validator)?;
-        let version_tag = prompt("Version tag prefix?", &get_or_default("gitflow.prefix.versiontag", "v"), &validator)?;
+        let (main_branch, develop_branch, feature_prefix, bugfix_prefix, release_prefix, hotfix_prefix, support_prefix, version_tag) = if self.default {
+            (
+                get_or_default("gitflow.branch.main", "main"),
+                get_or_default("gitflow.branch.develop", "develop"),
+                get_or_default("gitflow.prefix.feature", "feature/"),
+                get_or_default("gitflow.prefix.bugfix", "bugfix/"),
+                get_or_default("gitflow.prefix.release", "release/"),
+                get_or_default("gitflow.prefix.hotfix", "hotfix/"),
+                get_or_default("gitflow.prefix.support", "support/"),
+                get_or_default("gitflow.prefix.versiontag", "v"),
+            )
+        } else {
+            // 1. Sequential interactive prompts (matches original git-flow avh behavior)
+            let main = prompt(
+                "Which branch should be used for bringing forth production releases?",
+                &get_or_default("gitflow.branch.main", "main"),
+                &validator,
+            )?;
+            let develop = prompt(
+                "Which branch should be used for integration of the next release?",
+                &get_or_default("gitflow.branch.develop", "develop"),
+                &validator,
+            )?;
+            let feature = prompt("Branch prefix for features?", &get_or_default("gitflow.prefix.feature", "feature/"), &validator)?;
+            let bugfix = prompt("Branch prefix for bugfixes?", &get_or_default("gitflow.prefix.bugfix", "bugfix/"), &validator)?;
+            let release = prompt("Branch prefix for releases?", &get_or_default("gitflow.prefix.release", "release/"), &validator)?;
+            let hotfix = prompt("Branch prefix for hotfixes?", &get_or_default("gitflow.prefix.hotfix", "hotfix/"), &validator)?;
+            let support = prompt("Branch prefix for support branches?", &get_or_default("gitflow.prefix.support", "support/"), &validator)?;
+            let vtag = prompt("Version tag prefix?", &get_or_default("gitflow.prefix.versiontag", "v"), &validator)?;
+            (main, develop, feature, bugfix, release, hotfix, support, vtag)
+        };
 
         // 2. Persist all settings to .git/config using `git config --local`
         let config_entries = [

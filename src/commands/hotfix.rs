@@ -1,8 +1,23 @@
+// Copyright (C) 2026 Kairat Kubanychbek uulu <https://github.com/ImKairat>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use crate::cli::Execute;
+use crate::commands::common::{CommonFinishFlags, TaggingFlags};
 use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
-use crate::commands::common::{CommonFinishFlags, TaggingFlags};
 use clap::Subcommand;
 use tracing::info;
 
@@ -153,7 +168,11 @@ impl Execute for HotfixAction {
                 )?;
                 info!("Now tracking hotfix '{}' from origin", version);
             }
-            Self::Delete { version, force, remote } => {
+            Self::Delete {
+                version,
+                force,
+                remote,
+            } => {
                 let branch_name = format!("{}{}", config.hotfix_prefix, version);
                 if remote {
                     git::run_git_silent(&["push", "origin", "--delete", &branch_name], false)?;
@@ -174,12 +193,24 @@ impl Execute for HotfixAction {
                     }
                 }
             }
-            Self::Rebase { interactive, preserve_merges, version } => {
+            Self::Rebase {
+                interactive,
+                preserve_merges,
+                version,
+            } => {
                 let current = git::current_branch()?;
-                let hotfix_name = version.unwrap_or_else(|| current.replace(&config.hotfix_prefix, ""));
+                let hotfix_name =
+                    version.unwrap_or_else(|| current.replace(&config.hotfix_prefix, ""));
                 let branch_name = format!("{}{}", config.hotfix_prefix, hotfix_name);
-                let base = git::run_git(&["config", "--get", &format!("gitflow.branch.{}.base", branch_name)], false)
-                    .unwrap_or_else(|_| config.main_branch.clone());
+                let base = git::run_git(
+                    &[
+                        "config",
+                        "--get",
+                        &format!("gitflow.branch.{}.base", branch_name),
+                    ],
+                    false,
+                )
+                .unwrap_or_else(|_| config.main_branch.clone());
 
                 git::run_git_silent(&["checkout", &branch_name], false)?;
 

@@ -1,7 +1,22 @@
+// Copyright (C) 2026 Kairat Kubanychbek uulu <https://github.com/ImKairat>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use crate::cli::Cli;
 use crate::error::AppError;
 use clap::CommandFactory;
-use clap_complete::{generate, Shell};
+use clap_complete::{Shell, generate};
 use std::env;
 use std::fs;
 use std::io::Write;
@@ -10,7 +25,7 @@ use tracing::warn;
 
 pub fn run_install() -> Result<(), AppError> {
     println!("📦 Starting gitflow installation...");
-    
+
     // 1. Install binary
     install_binary()?;
 
@@ -45,7 +60,9 @@ fn install_binary() -> Result<(), AppError> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(&target_path).map_err(AppError::IoError)?.permissions();
+        let mut perms = fs::metadata(&target_path)
+            .map_err(AppError::IoError)?
+            .permissions();
         perms.set_mode(0o755);
         fs::set_permissions(&target_path, perms).map_err(AppError::IoError)?;
         println!("🔧 Set executable permissions on binary");
@@ -53,7 +70,7 @@ fn install_binary() -> Result<(), AppError> {
 
     println!("✅ Binary installed successfully");
     println!("💡 Make sure {} is in your PATH.", target_dir.display());
-    
+
     Ok(())
 }
 
@@ -66,58 +83,100 @@ fn setup_completions() -> Result<Option<String>, AppError> {
     } else if shell_path.contains("bash") {
         Shell::Bash
     } else {
-        warn!("Unsupported shell for automatic completion setup: {}", shell_path);
+        warn!(
+            "Unsupported shell for automatic completion setup: {}",
+            shell_path
+        );
         return Ok(None);
     };
 
     let home = env::var("HOME").unwrap_or_default();
     let mut cmd = Cli::command();
     let bin_name = "gitflow";
-    
+
     match shell {
         Shell::Bash => {
             let bash_config = PathBuf::from(&home).join(".bashrc");
-            let completion_dir = PathBuf::from(&home).join(".local").join("share").join("gitflow");
+            let completion_dir = PathBuf::from(&home)
+                .join(".local")
+                .join("share")
+                .join("gitflow");
             if !completion_dir.exists() {
-                println!("📁 Creating completions directory: {}", completion_dir.display());
+                println!(
+                    "📁 Creating completions directory: {}",
+                    completion_dir.display()
+                );
                 fs::create_dir_all(&completion_dir).map_err(AppError::IoError)?;
             }
             let completion_file = completion_dir.join("completion.bash");
-            
-            println!("📄 Generating Bash completions to: {}", completion_file.display());
+
+            println!(
+                "📄 Generating Bash completions to: {}",
+                completion_file.display()
+            );
             let mut file = fs::File::create(&completion_file).map_err(AppError::IoError)?;
             generate(Shell::Bash, &mut cmd, bin_name, &mut file);
-            
-            append_to_config(&bash_config, &format!("source {}", completion_file.display()))?;
-            println!("✅ Bash completions installed and added to {}", bash_config.display());
+
+            append_to_config(
+                &bash_config,
+                &format!("source {}", completion_file.display()),
+            )?;
+            println!(
+                "✅ Bash completions installed and added to {}",
+                bash_config.display()
+            );
             Ok(Some(format!("source {}", bash_config.display())))
         }
         Shell::Zsh => {
             let zsh_config = PathBuf::from(&home).join(".zshrc");
-            let completion_dir = PathBuf::from(&home).join(".local").join("share").join("gitflow");
+            let completion_dir = PathBuf::from(&home)
+                .join(".local")
+                .join("share")
+                .join("gitflow");
             if !completion_dir.exists() {
-                println!("📁 Creating completions directory: {}", completion_dir.display());
+                println!(
+                    "📁 Creating completions directory: {}",
+                    completion_dir.display()
+                );
                 fs::create_dir_all(&completion_dir).map_err(AppError::IoError)?;
             }
             let completion_file = completion_dir.join("completion.zsh");
-            
-            println!("📄 Generating Zsh completions to: {}", completion_file.display());
+
+            println!(
+                "📄 Generating Zsh completions to: {}",
+                completion_file.display()
+            );
             let mut file = fs::File::create(&completion_file).map_err(AppError::IoError)?;
             generate(Shell::Zsh, &mut cmd, bin_name, &mut file);
-            
-            append_to_config(&zsh_config, &format!("source {}", completion_file.display()))?;
-            println!("✅ Zsh completions installed and added to {}", zsh_config.display());
+
+            append_to_config(
+                &zsh_config,
+                &format!("source {}", completion_file.display()),
+            )?;
+            println!(
+                "✅ Zsh completions installed and added to {}",
+                zsh_config.display()
+            );
             Ok(Some(format!("source {}", zsh_config.display())))
         }
         Shell::Fish => {
-            let fish_config_dir = PathBuf::from(&home).join(".config").join("fish").join("completions");
+            let fish_config_dir = PathBuf::from(&home)
+                .join(".config")
+                .join("fish")
+                .join("completions");
             if !fish_config_dir.exists() {
-                println!("📁 Creating Fish completions directory: {}", fish_config_dir.display());
+                println!(
+                    "📁 Creating Fish completions directory: {}",
+                    fish_config_dir.display()
+                );
                 fs::create_dir_all(&fish_config_dir).map_err(AppError::IoError)?;
             }
             let completion_file = fish_config_dir.join("gitflow.fish");
-            
-            println!("📄 Generating Fish completions to: {}", completion_file.display());
+
+            println!(
+                "📄 Generating Fish completions to: {}",
+                completion_file.display()
+            );
             let mut file = fs::File::create(&completion_file).map_err(AppError::IoError)?;
             generate(Shell::Fish, &mut cmd, bin_name, &mut file);
             println!("✅ Fish completions installed");
@@ -129,17 +188,26 @@ fn setup_completions() -> Result<Option<String>, AppError> {
 
 fn append_to_config(config_path: &PathBuf, line: &str) -> Result<(), AppError> {
     if !config_path.exists() {
-        println!("⚠️  Config file {} not found, skipping.", config_path.display());
+        println!(
+            "⚠️  Config file {} not found, skipping.",
+            config_path.display()
+        );
         return Ok(());
     }
 
     let content = fs::read_to_string(config_path).map_err(AppError::IoError)?;
     if content.contains(line) {
-        println!("ℹ️  Completions already configured in {}", config_path.display());
+        println!(
+            "ℹ️  Completions already configured in {}",
+            config_path.display()
+        );
         return Ok(());
     }
 
-    println!("✍️  Appending completion config to {}", config_path.display());
+    println!(
+        "✍️  Appending completion config to {}",
+        config_path.display()
+    );
     let mut file = fs::OpenOptions::new()
         .append(true)
         .open(config_path)

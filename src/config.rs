@@ -1,3 +1,18 @@
+// Copyright (C) 2026 Kairat Kubanychbek uulu <https://github.com/ImKairat>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use crate::error::AppError;
 use crate::git;
 
@@ -19,10 +34,15 @@ impl GitFlowConfig {
     /// Returns an error if the repository hasn't been initialized with `gitflow init`.
     pub fn load() -> Result<Self, AppError> {
         let get_opt = |key: &str| git::git_config_get(key);
-        
+
         let main_branch = get_opt("gitflow.branch.main")
             .or_else(|| get_opt("gitflow.branch.master"))
-            .ok_or_else(|| AppError::Config("Could not find gitflow.branch.main or .master. Run `gitflow init` first.".into()))?;
+            .ok_or_else(|| {
+                AppError::Config(
+                    "Could not find gitflow.branch.main or .master. Run `gitflow init` first."
+                        .into(),
+                )
+            })?;
 
         let develop_branch = get_opt("gitflow.branch.develop")
             .ok_or_else(|| AppError::Config("Key 'gitflow.branch.develop' not found.".into()))?;

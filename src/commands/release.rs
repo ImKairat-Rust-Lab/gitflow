@@ -1,8 +1,23 @@
+// Copyright (C) 2026 Kairat Kubanychbek uulu <https://github.com/ImKairat>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use crate::cli::Execute;
+use crate::commands::common::{CommonFinishFlags, TaggingFlags};
 use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
-use crate::commands::common::{CommonFinishFlags, TaggingFlags};
 use clap::Subcommand;
 use tracing::info;
 
@@ -181,12 +196,24 @@ impl Execute for ReleaseAction {
                     }
                 }
             }
-            Self::Rebase { interactive, preserve_merges, name } => {
+            Self::Rebase {
+                interactive,
+                preserve_merges,
+                name,
+            } => {
                 let current = git::current_branch()?;
-                let release_name = name.unwrap_or_else(|| current.replace(&config.release_prefix, ""));
+                let release_name =
+                    name.unwrap_or_else(|| current.replace(&config.release_prefix, ""));
                 let branch_name = format!("{}{}", config.release_prefix, release_name);
-                let base = git::run_git(&["config", "--get", &format!("gitflow.branch.{}.base", branch_name)], false)
-                    .unwrap_or_else(|_| config.develop_branch.clone());
+                let base = git::run_git(
+                    &[
+                        "config",
+                        "--get",
+                        &format!("gitflow.branch.{}.base", branch_name),
+                    ],
+                    false,
+                )
+                .unwrap_or_else(|_| config.develop_branch.clone());
 
                 git::run_git_silent(&["checkout", &branch_name], false)?;
 

@@ -1,8 +1,23 @@
+// Copyright (C) 2026 Kairat Kubanychbek uulu <https://github.com/ImKairat>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use crate::cli::Execute;
+use crate::commands::common::CommonFinishFlags;
 use crate::config::GitFlowConfig;
 use crate::error::AppError;
 use crate::git;
-use crate::commands::common::CommonFinishFlags;
 use clap::Subcommand;
 use tracing::info;
 
@@ -132,19 +147,39 @@ impl Execute for BugfixAction {
             }
             Self::Diff { name } => {
                 let current = git::current_branch()?;
-                let bugfix_name = name.unwrap_or_else(|| current.replace(&config.bugfix_prefix, ""));
+                let bugfix_name =
+                    name.unwrap_or_else(|| current.replace(&config.bugfix_prefix, ""));
                 let branch_name = format!("{}{}", config.bugfix_prefix, bugfix_name);
-                let base = git::run_git(&["config", "--get", &format!("gitflow.branch.{}.base", branch_name)], false)
-                    .unwrap_or_else(|_| config.develop_branch.clone());
+                let base = git::run_git(
+                    &[
+                        "config",
+                        "--get",
+                        &format!("gitflow.branch.{}.base", branch_name),
+                    ],
+                    false,
+                )
+                .unwrap_or_else(|_| config.develop_branch.clone());
 
                 git::run_git_interactive(&["diff", &format!("{}..{}", base, branch_name)], false)?;
             }
-            Self::Rebase { interactive, preserve_merges, name } => {
+            Self::Rebase {
+                interactive,
+                preserve_merges,
+                name,
+            } => {
                 let current = git::current_branch()?;
-                let bugfix_name = name.unwrap_or_else(|| current.replace(&config.bugfix_prefix, ""));
+                let bugfix_name =
+                    name.unwrap_or_else(|| current.replace(&config.bugfix_prefix, ""));
                 let branch_name = format!("{}{}", config.bugfix_prefix, bugfix_name);
-                let base = git::run_git(&["config", "--get", &format!("gitflow.branch.{}.base", branch_name)], false)
-                    .unwrap_or_else(|_| config.develop_branch.clone());
+                let base = git::run_git(
+                    &[
+                        "config",
+                        "--get",
+                        &format!("gitflow.branch.{}.base", branch_name),
+                    ],
+                    false,
+                )
+                .unwrap_or_else(|_| config.develop_branch.clone());
 
                 git::run_git_silent(&["checkout", &branch_name], false)?;
 
@@ -173,7 +208,11 @@ impl Execute for BugfixAction {
                 git::run_git_silent(&["pull", "origin", &branch_name], false)?;
                 info!("Bugfix '{}' updated from origin", name);
             }
-            Self::Delete { name, force, remote } => {
+            Self::Delete {
+                name,
+                force,
+                remote,
+            } => {
                 let branch_name = format!("{}{}", config.bugfix_prefix, name);
                 if remote {
                     git::run_git_silent(&["push", "origin", "--delete", &branch_name], false)?;

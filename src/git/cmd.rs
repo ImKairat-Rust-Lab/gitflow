@@ -33,3 +33,27 @@ pub fn run_git_silent(args: &[&str], dry_run: bool) -> Result<(), AppError> {
     run_git(args, dry_run)?;
     Ok(())
 }
+
+pub fn run_git_interactive(args: &[&str], dry_run: bool) -> Result<(), AppError> {
+    if dry_run {
+        tracing::info!("[dry-run] git {}", args.join(" "));
+        return Ok(());
+    }
+
+    tracing::debug!("git (interactive) {}", args.join(" "));
+
+    let status = Command::new("git")
+        .args(args)
+        .status()
+        .map_err(AppError::IoError)?;
+
+    if !status.success() {
+        return Err(AppError::GitCommand {
+            args: args.join(" "),
+            status: status.code().unwrap_or(-1),
+            stderr: String::new(),
+        });
+    }
+
+    Ok(())
+}

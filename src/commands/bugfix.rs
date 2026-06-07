@@ -21,6 +21,39 @@ pub enum BugfixAction {
 
         name: String,
     },
+    Publish {
+        name: String,
+    },
+    Track {
+        name: String,
+    },
+    Diff {
+        name: Option<String>,
+    },
+    Rebase {
+        #[arg(short = 'i', long)]
+        interactive: bool,
+        #[arg(short = 'p', long)]
+        preserve_merges: bool,
+        name: Option<String>,
+    },
+    Checkout {
+        name: Option<String>,
+    },
+    Pull {
+        name: String,
+    },
+    Delete {
+        #[arg(short = 'f', long)]
+        force: bool,
+        #[arg(short = 'r', long)]
+        remote: bool,
+        name: String,
+    },
+    List {
+        #[arg(short = 'r', long)]
+        remote: bool,
+    },
 }
 
 impl Execute for BugfixAction {
@@ -78,6 +111,93 @@ impl Execute for BugfixAction {
                 );
 
                 git::run_hook("post-flow-bugfix-finish", &[&name])?;
+            }
+            Self::Publish { name } => {
+                let branch_name = format!("{}{}", config.bugfix_prefix, name);
+                git::run_git_silent(&["push", "-u", "origin", &branch_name], false)?;
+                info!("Bugfix '{}' published to origin", name);
+            }
+            Self::Track { name } => {
+                let branch_name = format!("{}{}", config.bugfix_prefix, name);
+                git::run_git_silent(
+                    &[
+                        "checkout",
+                        "-b",
+                        &branch_name,
+                        &format!("origin/{}", branch_name),
+                    ],
+                    false,
+                )?;
+                info!("Now tracking bugfix '{}' from origin", name);
+            }
+            Self::Diff { name } => {
+                let current = git::current_branch()?;
+                let bugfix_name = name.unwrap_or_else(|| current.replace(&config.bugfix_prefix, ""));
+                let branch_name = format!("{}{}", config.bugfix_prefix, bugfix_name);
+                let base = git::run_git(&["config", "--get", &format!("gitflow.branch.{}.base", branch_name)], false)
+                    .unwrap_or_else(|_| config.develop_branch.clone());
+
+                git::run_git_interactive(&["diff", &format!("{}..{}", base, branch_name)], false)?;
+            }
+            Self::Rebase { interactive, preserve_merges, name } => {
+                let current = git::current_branch()?;
+                let bugfix_name = name.unwrap_or_else(|| current.replace(&config.bugfix_prefix, ""));
+                let branch_name = format!("{}{}", config.bugfix_prefix, bugfix_name);
+                let base = git::run_git(&["config", "--get", &format!("gitflow.branch.{}.base", branch_name)], false)
+                    .unwrap_or_else(|_| config.develop_branch.clone());
+
+                git::run_git_silent(&["checkout", &branch_name], false)?;
+
+                let mut args = vec!["rebase"];
+                if interactive {
+                    args.push("-i");
+                }
+                if preserve_merges {
+                    args.push("-p");
+                }
+                args.push(&base);
+
+                git::run_git_interactive(&args, false)?;
+            }
+            Self::Checkout { name } => {
+                if let Some(n) = name {
+                    let branch_name = format!("{}{}", config.bugfix_prefix, n);
+                    git::run_git_silent(&["checkout", &branch_name], false)?;
+                } else {
+                    return Err(AppError::Config("Branch name is required".to_string()));
+                }
+            }
+            Self::Pull { name } => {
+                let branch_name = format!("{}{}", config.bugfix_prefix, name);
+                git::run_git_silent(&["checkout", &branch_name], false)?;
+                git::run_git_silent(&["pull", "origin", &branch_name], false)?;
+                info!("Bugfix '{}' updated from origin", name);
+            }
+            Self::Delete { name, force, remote } => {
+                let branch_name = format!("{}{}", config.bugfix_prefix, name);
+                if remote {
+                    git::run_git_silent(&["push", "origin", "--delete", &branch_name], false)?;
+                    info!("Remote branch '{}' deleted", branch_name);
+                }
+                let delete_flag = if force { "-D" } else { "-d" };
+                git::run_git_silent(&["branch", delete_flag, &branch_name], false)?;
+                info!("Local branch '{}' deleted", branch_name);
+            }
+            Self::List { remote } => {
+                let prefix = if remote {
+                    format!("remotes/origin/{}", config.bugfix_prefix)
+                } else {
+                    config.bugfix_prefix.clone()
+                };
+                let branches = git::list_branches(&prefix)?;
+                if branches.is_empty() {
+                    info!("No bugfix branches found.");
+                } else {
+                    info!("Bugfix branches:");
+                    for b in branches {
+                        println!("  {}", b.trim_start_matches(&prefix));
+                    }
+                }
             }
         }
         Ok(())

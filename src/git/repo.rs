@@ -66,11 +66,10 @@ pub fn list_branches(prefix: &str) -> Result<Vec<String>, AppError> {
         let (branch, _) = branch.map_err(|e| AppError::Config(format!("Branch error: {}", e)))?;
         if let Some(name) = branch
             .name()
-            .map_err(|e| AppError::Config(format!("Name error: {}", e)))? {
-                if name.starts_with(prefix) {
+            .map_err(|e| AppError::Config(format!("Name error: {}", e)))?
+                && name.starts_with(prefix) {
                     result.push(name.to_string());
                 }
-            }
     }
     Ok(result)
 }

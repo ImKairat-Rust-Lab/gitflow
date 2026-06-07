@@ -1,7 +1,8 @@
 use clap::{Parser, Subcommand};
 use crate::error::AppError;
 use crate::commands::{
-    InitArgs, FeatureAction, ReleaseAction, HotfixAction, SupportAction, BugfixAction
+    InitArgs, FeatureAction, ReleaseAction, HotfixAction, SupportAction, BugfixAction,
+    VersionArgs, LogArgs, ConfigAction,
 };
 
 #[derive(Parser, Debug)]
@@ -57,6 +58,18 @@ pub enum GitFlowCommands {
 
     /// Automatically finish the current branch (feature, release, hotfix, or bugfix)
     Finish,
+
+    /// Shows version information
+    Version(VersionArgs),
+
+    /// Show log deviating from base branch
+    Log(LogArgs),
+
+    /// Manage your git-flow configuration
+    Config {
+        #[command(subcommand)]
+        action: ConfigAction,
+    },
 }
 
 pub trait Execute {
@@ -74,6 +87,9 @@ impl Execute for GitFlowCommands {
             Self::Bugfix { action } => action.execute(),
             Self::Finish => crate::commands::run_finish_auto(),
             Self::Install => crate::commands::run_install(),
+            Self::Version(args) => args.execute(),
+            Self::Log(args) => args.execute(),
+            Self::Config { action } => action.execute(),
         }
     }
 }

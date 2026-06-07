@@ -42,6 +42,19 @@ pub enum FeatureAction {
     Pull {
         name: String,
     },
+    Diff {
+        name: Option<String>,
+    },
+    Rebase {
+        #[arg(short = 'i', long)]
+        interactive: bool,
+        #[arg(short = 'p', long)]
+        preserve_merges: bool,
+        name: Option<String>,
+    },
+    Checkout {
+        name: Option<String>,
+    },
     /// List all feature branches
     List {
         /// List remote branches as well
@@ -185,6 +198,43 @@ impl Execute for FeatureAction {
                 let delete_flag = if force { "-D" } else { "-d" };
                 git::run_git_silent(&["branch", delete_flag, &branch_name], false)?;
                 info!("Local branch '{}' deleted", branch_name);
+            }
+            Self::Diff { name } => {
+                let current = git::current_branch()?;
+                let feature_name = name.unwrap_or_else(|| current.replace(&config.feature_prefix, ""));
+                let branch_name = format!("{}{}", config.feature_prefix, feature_name);
+                let base = git::run_git(&["config", "--get", &format!("gitflow.branch.{}.base", branch_name)], false)
+                    .unwrap_or_else(|_| config.develop_branch.clone());
+
+                git::run_git_interactive(&["diff", &format!("{}..{}", base, branch_name)], false)?;
+            }
+            Self::Rebase { interactive, preserve_merges, name } => {
+                let current = git::current_branch()?;
+                let feature_name = name.unwrap_or_else(|| current.replace(&config.feature_prefix, ""));
+                let branch_name = format!("{}{}", config.feature_prefix, feature_name);
+                let base = git::run_git(&["config", "--get", &format!("gitflow.branch.{}.base", branch_name)], false)
+                    .unwrap_or_else(|_| config.develop_branch.clone());
+
+                git::run_git_silent(&["checkout", &branch_name], false)?;
+
+                let mut args = vec!["rebase"];
+                if interactive {
+                    args.push("-i");
+                }
+                if preserve_merges {
+                    args.push("-p");
+                }
+                args.push(&base);
+
+                git::run_git_interactive(&args, false)?;
+            }
+            Self::Checkout { name } => {
+                if let Some(n) = name {
+                    let branch_name = format!("{}{}", config.feature_prefix, n);
+                    git::run_git_silent(&["checkout", &branch_name], false)?;
+                } else {
+                    return Err(AppError::Config("Branch name is required".to_string()));
+                }
             }
         }
         Ok(())

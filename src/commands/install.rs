@@ -90,7 +90,7 @@ fn setup_completions() -> Result<Option<String>, AppError> {
             
             append_to_config(&bash_config, &format!("source {}", completion_file.display()))?;
             println!("✅ Bash completions installed and added to {}", bash_config.display());
-            return Ok(Some(format!("source {}", bash_config.display())));
+            Ok(Some(format!("source {}", bash_config.display())))
         }
         Shell::Zsh => {
             let zsh_config = PathBuf::from(&home).join(".zshrc");
@@ -107,7 +107,7 @@ fn setup_completions() -> Result<Option<String>, AppError> {
             
             append_to_config(&zsh_config, &format!("source {}", completion_file.display()))?;
             println!("✅ Zsh completions installed and added to {}", zsh_config.display());
-            return Ok(Some(format!("source {}", zsh_config.display())));
+            Ok(Some(format!("source {}", zsh_config.display())))
         }
         Shell::Fish => {
             let fish_config_dir = PathBuf::from(&home).join(".config").join("fish").join("completions");
@@ -121,9 +121,9 @@ fn setup_completions() -> Result<Option<String>, AppError> {
             let mut file = fs::File::create(&completion_file).map_err(AppError::IoError)?;
             generate(Shell::Fish, &mut cmd, bin_name, &mut file);
             println!("✅ Fish completions installed");
-            return Ok(None);
+            Ok(None)
         }
-        _ => return Ok(None),
+        _ => Ok(None),
     }
 }
 

@@ -27,6 +27,4 @@ target
 
 # Arch Linux packaging artifacts
 *.pkg.tar.*
-/packaging/archlinux/src/
-/packaging/archlinux/pkg/
-
+/pkg/

@@ -22,7 +22,7 @@ pub struct VersionArgs {}
 
 impl Execute for VersionArgs {
     fn execute(self) -> Result<(), AppError> {
-        println!("1.12.3 (Oxidized AVH Edition)");
+        println!("{} (Oxidized AVH Edition)", env!("CARGO_PKG_VERSION"));
         Ok(())
     }
 }

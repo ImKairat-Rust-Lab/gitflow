@@ -1,8 +1,9 @@
 # Gitflow Rust
 
-[![Rust](https://img.shields.io/badge/language-Rust-orange.svg)](https://www.rust-lang.org/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![CI](https://github.com/ImKairat-Rust-Lab/gitflow/actions/workflows/ci.yml/badge.svg)](https://github.com/ImKairat-Rust-Lab/gitflow/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/tag/ImKairat-Rust-Lab/gitflow?color=blue&label=version)](https://github.com/ImKairat-Rust-Lab/gitflow/releases)
+
 
 **Gitflow Rust** is a high-performance, type-safe implementation of the Gitflow AVH branching model, rewritten from the ground up in Rust. It provides a robust CLI interface to manage your development workflow with speed and reliability.
 

@@ -7,6 +7,9 @@ pub mod support;
 pub mod install;
 pub mod finish;
 pub mod common;
+pub mod version;
+pub mod log;
+pub mod config_cmd;
 
 pub use bugfix::BugfixAction;
 pub use feature::FeatureAction;
@@ -16,3 +19,6 @@ pub use release::ReleaseAction;
 pub use support::SupportAction;
 pub use install::run_install;
 pub use finish::run_finish_auto;
+pub use version::VersionArgs;
+pub use log::LogArgs;
+pub use config_cmd::ConfigAction;

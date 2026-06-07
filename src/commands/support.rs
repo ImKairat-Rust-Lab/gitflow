@@ -9,6 +9,10 @@ use tracing::info;
 pub enum SupportAction {
     /// Start a new support branch
     Start { version: String, base: String },
+    List {
+        #[arg(short = 'v', long)]
+        verbose: bool,
+    },
 }
 
 impl Execute for SupportAction {
@@ -25,6 +29,18 @@ impl Execute for SupportAction {
                 git::run_git_silent(&["checkout", "-b", &branch_name, &base], false)?;
 
                 git::run_hook("post-flow-support-start", &[&version, &base])?;
+            }
+            Self::List { verbose: _ } => {
+                let prefix = config.support_prefix.clone();
+                let branches = git::list_branches(&prefix)?;
+                if branches.is_empty() {
+                    info!("No support branches found.");
+                } else {
+                    info!("Support branches:");
+                    for b in branches {
+                        println!("  {}", b.trim_start_matches(&prefix));
+                    }
+                }
             }
         }
         Ok(())

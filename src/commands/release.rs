@@ -28,6 +28,20 @@ pub enum ReleaseAction {
     Publish {
         version: String,
     },
+    Track {
+        name: String,
+    },
+    List {
+        #[arg(short = 'v', long)]
+        verbose: bool,
+    },
+    Rebase {
+        #[arg(short = 'i', long)]
+        interactive: bool,
+        #[arg(short = 'p', long)]
+        preserve_merges: bool,
+        name: Option<String>,
+    },
     Delete {
         #[arg(short = 'f', long)]
         force: bool,
@@ -141,6 +155,51 @@ impl Execute for ReleaseAction {
                 let delete_flag = if force { "-D" } else { "-d" };
                 git::run_git_silent(&["branch", delete_flag, &branch_name], false)?;
                 info!("Release branch '{}' deleted", branch_name);
+            }
+            Self::Track { name } => {
+                let branch_name = format!("{}{}", config.release_prefix, name);
+                git::run_git_silent(
+                    &[
+                        "checkout",
+                        "-b",
+                        &branch_name,
+                        &format!("origin/{}", branch_name),
+                    ],
+                    false,
+                )?;
+                info!("Now tracking release '{}' from origin", name);
+            }
+            Self::List { verbose: _ } => {
+                let prefix = config.release_prefix.clone();
+                let branches = git::list_branches(&prefix)?;
+                if branches.is_empty() {
+                    info!("No release branches found.");
+                } else {
+                    info!("Release branches:");
+                    for b in branches {
+                        println!("  {}", b.trim_start_matches(&prefix));
+                    }
+                }
+            }
+            Self::Rebase { interactive, preserve_merges, name } => {
+                let current = git::current_branch()?;
+                let release_name = name.unwrap_or_else(|| current.replace(&config.release_prefix, ""));
+                let branch_name = format!("{}{}", config.release_prefix, release_name);
+                let base = git::run_git(&["config", "--get", &format!("gitflow.branch.{}.base", branch_name)], false)
+                    .unwrap_or_else(|_| config.develop_branch.clone());
+
+                git::run_git_silent(&["checkout", &branch_name], false)?;
+
+                let mut args = vec!["rebase"];
+                if interactive {
+                    args.push("-i");
+                }
+                if preserve_merges {
+                    args.push("-p");
+                }
+                args.push(&base);
+
+                git::run_git_interactive(&args, false)?;
             }
         }
         Ok(())

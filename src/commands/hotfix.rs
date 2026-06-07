@@ -24,6 +24,30 @@ pub enum HotfixAction {
 
         version: String,
     },
+    Publish {
+        version: String,
+    },
+    Track {
+        version: String,
+    },
+    Delete {
+        #[arg(short = 'f', long)]
+        force: bool,
+        #[arg(short = 'r', long)]
+        remote: bool,
+        version: String,
+    },
+    List {
+        #[arg(short = 'v', long)]
+        verbose: bool,
+    },
+    Rebase {
+        #[arg(short = 'i', long)]
+        interactive: bool,
+        #[arg(short = 'p', long)]
+        preserve_merges: bool,
+        version: Option<String>,
+    },
 }
 
 impl Execute for HotfixAction {
@@ -110,6 +134,65 @@ impl Execute for HotfixAction {
                 );
 
                 git::run_hook("post-flow-hotfix-finish", &[&version])?;
+            }
+            Self::Publish { version } => {
+                let branch_name = format!("{}{}", config.hotfix_prefix, version);
+                git::run_git_silent(&["push", "-u", "origin", &branch_name], false)?;
+                info!("Hotfix '{}' published to origin", version);
+            }
+            Self::Track { version } => {
+                let branch_name = format!("{}{}", config.hotfix_prefix, version);
+                git::run_git_silent(
+                    &[
+                        "checkout",
+                        "-b",
+                        &branch_name,
+                        &format!("origin/{}", branch_name),
+                    ],
+                    false,
+                )?;
+                info!("Now tracking hotfix '{}' from origin", version);
+            }
+            Self::Delete { version, force, remote } => {
+                let branch_name = format!("{}{}", config.hotfix_prefix, version);
+                if remote {
+                    git::run_git_silent(&["push", "origin", "--delete", &branch_name], false)?;
+                }
+                let delete_flag = if force { "-D" } else { "-d" };
+                git::run_git_silent(&["branch", delete_flag, &branch_name], false)?;
+                info!("Hotfix branch '{}' deleted", branch_name);
+            }
+            Self::List { verbose: _ } => {
+                let prefix = config.hotfix_prefix.clone();
+                let branches = git::list_branches(&prefix)?;
+                if branches.is_empty() {
+                    info!("No hotfix branches found.");
+                } else {
+                    info!("Hotfix branches:");
+                    for b in branches {
+                        println!("  {}", b.trim_start_matches(&prefix));
+                    }
+                }
+            }
+            Self::Rebase { interactive, preserve_merges, version } => {
+                let current = git::current_branch()?;
+                let hotfix_name = version.unwrap_or_else(|| current.replace(&config.hotfix_prefix, ""));
+                let branch_name = format!("{}{}", config.hotfix_prefix, hotfix_name);
+                let base = git::run_git(&["config", "--get", &format!("gitflow.branch.{}.base", branch_name)], false)
+                    .unwrap_or_else(|_| config.main_branch.clone());
+
+                git::run_git_silent(&["checkout", &branch_name], false)?;
+
+                let mut args = vec!["rebase"];
+                if interactive {
+                    args.push("-i");
+                }
+                if preserve_merges {
+                    args.push("-p");
+                }
+                args.push(&base);
+
+                git::run_git_interactive(&args, false)?;
             }
         }
         Ok(())

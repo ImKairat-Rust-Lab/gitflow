@@ -1,23 +1,25 @@
 # Maintainer: Kairat Kubanychbek uulu <https://github.com/ImKairat>
 
 pkgname=gitflow
-pkgver=1.0.0_beta.1
+pkgver=1.0.0_beta.2
 pkgrel=1
-pkgdesc="Gitflow is a Git extension that implements the Gitflow AVH branching model."
+pkgdesc="A high-performance, type-safe implementation of the Gitflow AVH branching model in Rust."
 arch=('x86_64' 'aarch64')
 url="https://github.com/ImKairat-Rust-Lab/gitflow"
 license=('GPL-3.0-only')
 depends=('gcc-libs')
-makedepends=('cargo')
+makedepends=('cargo' 'git')
+provides=('gitflow')
+conflicts=('gitflow')
 options=('!lto')
-source=()
-sha256sums=()
+source=("git+https://github.com/ImKairat-Rust-Lab/gitflow.git#tag=v1.0.0-beta.2")
+sha256sums=('SKIP')
 
 build() {
-  cd "${startdir}"
+  cd "${srcdir}/${pkgname}"
   cargo build --release
 }
 
 package() {
-  install -Dm755 "${startdir}/target/release/gitflow" "${pkgdir}/usr/bin/gitflow"
+  install -Dm755 "${srcdir}/${pkgname}/target/release/gitflow" "${pkgdir}/usr/bin/gitflow"
 }

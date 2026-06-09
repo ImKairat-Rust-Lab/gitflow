@@ -361,7 +361,7 @@ fn test_feature_extended_actions() {
 #[test]
 fn test_init_rename_master_to_main() {
     let dir = tempdir().expect("Failed to create temp dir");
-    
+
     // Setup repo manually with 'master' branch
     StdCommand::new("git")
         .args(&["init", "-b", "master"])

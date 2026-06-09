@@ -127,10 +127,21 @@ impl Execute for InitArgs {
         } else {
             // Handle existing repository branch renaming for main/master
             if main_branch == "main" || main_branch == "master" {
-                let alternative_branch = if main_branch == "main" { "master" } else { "main" };
+                let alternative_branch = if main_branch == "main" {
+                    "master"
+                } else {
+                    "main"
+                };
                 if !git::branch_exists(&main_branch) && git::branch_exists(alternative_branch) {
-                    tracing::info!("Renaming branch '{}' to '{}'...", alternative_branch, main_branch);
-                    git::run_git_silent(&["branch", "-m", alternative_branch, &main_branch], false)?;
+                    tracing::info!(
+                        "Renaming branch '{}' to '{}'...",
+                        alternative_branch,
+                        main_branch
+                    );
+                    git::run_git_silent(
+                        &["branch", "-m", alternative_branch, &main_branch],
+                        false,
+                    )?;
                 }
             }
         }
@@ -140,7 +151,11 @@ impl Execute for InitArgs {
             tracing::info!("Creating initial commit...");
             // Ensure we are on the chosen main branch before committing
             git::run_git_silent(
-                &["symbolic-ref", "HEAD", &format!("refs/heads/{}", main_branch)],
+                &[
+                    "symbolic-ref",
+                    "HEAD",
+                    &format!("refs/heads/{}", main_branch),
+                ],
                 false,
             )?;
             git::run_git_silent(&["commit", "--allow-empty", "-m", "Initial commit"], false)?;

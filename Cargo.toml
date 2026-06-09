@@ -1,6 +1,6 @@
 [package]
 name = "gitflow"
-version = "1.0.0-beta.1"
+version = "1.0.0-beta.2"
 edition = "2024"
 authors = ["Kairat Kubanychbek uulu <https://github.com/ImKairat>"]
 description = "Gitflow is a Git extension that implements the Gitflow AVH branching model."

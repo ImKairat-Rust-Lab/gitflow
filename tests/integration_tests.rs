@@ -1,4 +1,20 @@
+// Copyright (C) 2026 Kairat Kubanychbek uulu <https://github.com/ImKairat>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use assert_cmd::Command;
+use predicates::prelude::*;
 use std::fs;
 use std::process::Command as StdCommand;
 use tempfile::tempdir;
@@ -273,4 +289,67 @@ fn test_init_no_git_repo() {
     assert_eq!(get_current_branch(dir.path()), "develop");
     assert!(branch_exists(dir.path(), "main"));
     assert!(branch_exists(dir.path(), "develop"));
+}
+
+#[test]
+fn test_version_command() {
+    let mut cmd = Command::cargo_bin("gitflow").unwrap();
+    cmd.arg("version")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Oxidized AVH Edition"));
+}
+
+#[test]
+fn test_config_command() {
+    let dir = tempdir().expect("Failed to create temp dir");
+    setup_repo(dir.path());
+
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["init", "-d"])
+        .assert()
+        .success();
+
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["config", "list"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("gitflow.branch.master")
+                .or(predicate::str::contains("gitflow.branch.main")),
+        );
+}
+
+#[test]
+fn test_feature_extended_actions() {
+    let dir = tempdir().expect("Failed to create temp dir");
+    setup_repo(dir.path());
+
+    // Init
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["init", "-d"])
+        .assert()
+        .success();
+
+    // Feature Start
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["feature", "start", "extended-feat"])
+        .assert()
+        .success();
+
+    // Checkout develop
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["feature", "checkout", "extended-feat"])
+        .assert()
+        .success();
 }

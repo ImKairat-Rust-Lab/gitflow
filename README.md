@@ -1,9 +1,13 @@
 # Gitflow Rust
 
-[![Rust](https://img.shields.io/badge/language-Rust-orange.svg)](https://www.rust-lang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![CI](https://github.com/ImKairat-Rust-Lab/gitflow/actions/workflows/ci.yml/badge.svg)](https://github.com/ImKairat-Rust-Lab/gitflow/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/tag/ImKairat-Rust-Lab/gitflow?color=blue&label=version)](https://github.com/ImKairat-Rust-Lab/gitflow/releases)
+
 
 **Gitflow Rust** is a high-performance, type-safe implementation of the Gitflow AVH branching model, rewritten from the ground up in Rust. It provides a robust CLI interface to manage your development workflow with speed and reliability.
+
+> **Note:** This project is heavily inspired by and aims to provide full feature parity with [petervanderdoes/gitflow-avh](https://github.com/petervanderdoes/gitflow-avh).
 
 ## Key Features
 
@@ -18,9 +22,11 @@
 
 Ensure you have the [Rust toolchain](https://www.rust-lang.org/tools/install) installed.
 
+### Building from Source
+
 ```bash
-git clone https://github.com/youruser/gitflow-rust.git
-cd gitflow-rust
+git clone https://github.com/ImKairat-Rust-Lab/gitflow.git
+cd gitflow
 cargo build --release
 ```
 
@@ -36,7 +42,15 @@ Automatically builds and moves the binary to your Cargo bin path:
 cargo install --path .
 ```
 
-**Option 2: Manual Move (Linux/macOS)**
+**Option 2: Arch Linux (using `makepkg`)**
+
+If you are on Arch Linux, you can build and install it natively using the provided `PKGBUILD`:
+
+```bash
+makepkg -si
+```
+
+**Option 3: Manual Move (Linux/macOS)**
 
 ```bash
 sudo cp target/release/gitflow /usr/local/bin/
@@ -90,8 +104,9 @@ source <(gitflow completions zsh)
 
 ## Architecture
 
-- `src/parser/models.rs` — All `clap` structures, enums, and command definitions.
-- `src/parser/service.rs` — Implements the `Execute` trait, housing the logic for each command.
+- `src/cli.rs` — All `clap` structures, enums, and top-level command routing.
+- `src/commands/*.rs` — Implements the `Execute` trait, housing the logic for each subcommand (`feature`, `release`, etc.).
+- `src/git/` — Core wrappers around native Git commands and hooks execution.
 - `src/main.rs` — Entry point that orchestrates parsing and execution.
 
 ---
@@ -100,9 +115,9 @@ source <(gitflow completions zsh)
 
 - [x] Full CLI argument parsing and validation.
 - [x] Shell completion generation.
-- [ ] Integration with `git2-rs` for native Git operations.
-- [ ] Configuration file support (`.gitflow`).
-- [ ] GPG signing for release tags.
+- [x] Integration with `git2-rs` for native Git operations.
+- [x] Configuration file support (`.gitflow`).
+- [x] GPG signing for release tags.
 
 ---
 
@@ -118,4 +133,4 @@ source <(gitflow completions zsh)
 
 ## License
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+Distributed under the GPLv3 License. See [LICENSE](LICENSE) for more information.

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ "develop", "main" ]
+  pull_request:
+    branches: [ "develop", "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build_and_test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+        
+    - name: Cache dependencies
+      uses: Swatinem/rust-cache@v2
+
+    - name: Check Formatting
+      run: cargo fmt -- --check
+
+    - name: Run Clippy
+      run: cargo clippy -- -D warnings
+
+    - name: Build
+      run: cargo build --verbose
+
+    - name: Run Tests
+      run: cargo test --verbose

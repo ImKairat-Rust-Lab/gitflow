@@ -1,7 +1,21 @@
+// Copyright (C) 2026 Kairat Kubanychbek uulu <https://github.com/ImKairat>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use crate::error::AppError;
 use git2::Repository;
 use std::path::PathBuf;
-
 
 pub fn get_repo_root() -> Result<PathBuf, AppError> {
     let repo = Repository::discover(".")
@@ -67,9 +81,10 @@ pub fn list_branches(prefix: &str) -> Result<Vec<String>, AppError> {
         if let Some(name) = branch
             .name()
             .map_err(|e| AppError::Config(format!("Name error: {}", e)))?
-                && name.starts_with(prefix) {
-                    result.push(name.to_string());
-                }
+            && name.starts_with(prefix)
+        {
+            result.push(name.to_string());
+        }
     }
     Ok(result)
 }

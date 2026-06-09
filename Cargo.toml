@@ -1,7 +1,11 @@
 [package]
 name = "gitflow"
-version = "0.1.0"
+version = "1.0.0-beta.1"
 edition = "2024"
+authors = ["Kairat Kubanychbek uulu <https://github.com/ImKairat>"]
+description = "Gitflow is a Git extension that implements the Gitflow AVH branching model."
+repository = "https://github.com/ImKairat-Rust-Lab/gitflow"
+license = "GPL-3.0-only"
 
 [dependencies]
 clap = { version = "4.6.1", features = ["derive", "color", "suggestions"] }

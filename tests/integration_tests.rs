@@ -357,3 +357,53 @@ fn test_feature_extended_actions() {
         .assert()
         .success();
 }
+
+#[test]
+fn test_init_rename_master_to_main() {
+    let dir = tempdir().expect("Failed to create temp dir");
+    
+    // Setup repo manually with 'master' branch
+    StdCommand::new("git")
+        .args(&["init", "-b", "master"])
+        .current_dir(dir.path())
+        .output()
+        .expect("Failed to init repo");
+
+    StdCommand::new("git")
+        .args(&["config", "user.email", "test@example.com"])
+        .current_dir(dir.path())
+        .output()
+        .expect("Failed to set email");
+
+    StdCommand::new("git")
+        .args(&["config", "user.name", "Test User"])
+        .current_dir(dir.path())
+        .output()
+        .expect("Failed to set name");
+
+    std::fs::write(dir.path().join("README.md"), "test").unwrap();
+    StdCommand::new("git")
+        .args(&["add", "."])
+        .current_dir(dir.path())
+        .output()
+        .unwrap();
+    StdCommand::new("git")
+        .args(&["commit", "-m", "Initial commit"])
+        .current_dir(dir.path())
+        .output()
+        .unwrap();
+
+    // Now initialize gitflow with '-d' (default uses 'main')
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .arg("init")
+        .arg("-d")
+        .assert()
+        .success();
+
+    assert_eq!(get_current_branch(dir.path()), "develop");
+    assert!(branch_exists(dir.path(), "main"));
+    assert!(!branch_exists(dir.path(), "master"));
+    assert!(branch_exists(dir.path(), "develop"));
+}

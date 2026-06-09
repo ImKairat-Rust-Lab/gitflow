@@ -268,5 +268,9 @@ fn test_init_no_git_repo() {
         .arg("init")
         .arg("-d")
         .assert()
-        .failure();
+        .success();
+
+    assert_eq!(get_current_branch(dir.path()), "develop");
+    assert!(branch_exists(dir.path(), "main"));
+    assert!(branch_exists(dir.path(), "develop"));
 }

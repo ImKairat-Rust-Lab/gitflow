@@ -24,3 +24,8 @@ target
 # Added by cargo
 
 /target
+
+# AUR packaging builds and artifacts
+packaging/aur/gitflow/pkg/
+packaging/aur/gitflow/gitflow/
+*.pkg.tar.zst

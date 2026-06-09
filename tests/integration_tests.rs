@@ -281,10 +281,18 @@ fn test_init_no_git_repo() {
     Command::cargo_bin("gitflow")
         .unwrap()
         .current_dir(dir.path())
+        .env("GIT_AUTHOR_NAME", "Gitflow")
+        .env("GIT_AUTHOR_EMAIL", "gitflow@localhost")
+        .env("GIT_COMMITTER_NAME", "Gitflow")
+        .env("GIT_COMMITTER_EMAIL", "gitflow@localhost")
         .arg("init")
         .arg("-d")
         .assert()
-        .failure();
+        .success();
+
+    assert_eq!(get_current_branch(dir.path()), "develop");
+    assert!(branch_exists(dir.path(), "main"));
+    assert!(branch_exists(dir.path(), "develop"));
 }
 
 #[test]

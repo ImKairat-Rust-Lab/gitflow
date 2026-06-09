@@ -25,6 +25,7 @@ target
 
 /target
 
-# Arch Linux packaging artifacts
-*.pkg.tar.*
-/pkg/
+# AUR packaging builds and artifacts
+packaging/aur/gitflow/pkg/
+packaging/aur/gitflow/gitflow/
+*.pkg.tar.zst

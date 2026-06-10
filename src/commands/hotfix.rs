@@ -100,13 +100,14 @@ impl Execute for HotfixAction {
 
                 git::run_hook("pre-flow-hotfix-finish", &[&version])?;
 
+                let remote = git::get_remote_name();
                 if common.fetch {
-                    git::run_git_silent(&["fetch", "origin"], false)?;
+                    git::run_git_silent(&["fetch", &remote], false)?;
                 }
 
                 // Merge into main
                 git::run_git_silent(&["checkout", &config.main_branch], false)?;
-                git::run_git_silent(&["merge", "--no-ff", &branch_name], false)?;
+                git::run_git_interactive(&["merge", "--no-ff", &branch_name], false)?;
 
                 // Tag
                 if !tagging.notag {
@@ -123,12 +124,12 @@ impl Execute for HotfixAction {
                     tag_args.push(tag_name.clone());
 
                     let tag_args_refs: Vec<&str> = tag_args.iter().map(|s| s.as_str()).collect();
-                    git::run_git_silent(&tag_args_refs, false)?;
+                    git::run_git_interactive(&tag_args_refs, false)?;
                 }
 
                 // Merge into develop
                 git::run_git_silent(&["checkout", &config.develop_branch], false)?;
-                git::run_git_silent(&["merge", "--no-ff", &branch_name], false)?;
+                git::run_git_interactive(&["merge", "--no-ff", &branch_name], false)?;
 
                 // Delete branch
                 if !common.keep {
@@ -136,10 +137,11 @@ impl Execute for HotfixAction {
                 }
 
                 if push {
-                    git::run_git_silent(&["push", "origin", &config.main_branch], false)?;
-                    git::run_git_silent(&["push", "origin", &config.develop_branch], false)?;
+                    let remote = git::get_remote_name();
+                    git::run_git_silent(&["push", &remote, &config.main_branch], false)?;
+                    git::run_git_silent(&["push", &remote, &config.develop_branch], false)?;
                     if !tagging.notag {
-                        git::run_git_silent(&["push", "origin", &tag_name], false)?;
+                        git::run_git_silent(&["push", &remote, &tag_name], false)?;
                     }
                 }
 
@@ -152,21 +154,23 @@ impl Execute for HotfixAction {
             }
             Self::Publish { version } => {
                 let branch_name = format!("{}{}", config.hotfix_prefix, version);
-                git::run_git_silent(&["push", "-u", "origin", &branch_name], false)?;
-                info!("Hotfix '{}' published to origin", version);
+                let remote = git::get_remote_name();
+                git::run_git_silent(&["push", "-u", &remote, &branch_name], false)?;
+                info!("Hotfix '{}' published to {}", version, remote);
             }
             Self::Track { version } => {
                 let branch_name = format!("{}{}", config.hotfix_prefix, version);
+                let remote = git::get_remote_name();
                 git::run_git_silent(
                     &[
                         "checkout",
                         "-b",
                         &branch_name,
-                        &format!("origin/{}", branch_name),
+                        &format!("{}/{}", remote, branch_name),
                     ],
                     false,
                 )?;
-                info!("Now tracking hotfix '{}' from origin", version);
+                info!("Now tracking hotfix '{}' from {}", version, remote);
             }
             Self::Delete {
                 version,
@@ -174,8 +178,10 @@ impl Execute for HotfixAction {
                 remote,
             } => {
                 let branch_name = format!("{}{}", config.hotfix_prefix, version);
+                let remote_name = git::get_remote_name();
                 if remote {
-                    git::run_git_silent(&["push", "origin", "--delete", &branch_name], false)?;
+                    git::run_git_silent(&["push", &remote_name, "--delete", &branch_name], false)?;
+                    info!("Remote branch '{}' deleted", branch_name);
                 }
                 let delete_flag = if force { "-D" } else { "-d" };
                 git::run_git_silent(&["branch", delete_flag, &branch_name], false)?;
@@ -219,7 +225,7 @@ impl Execute for HotfixAction {
                     args.push("-i");
                 }
                 if preserve_merges {
-                    args.push("-p");
+                    args.push("--rebase-merges");
                 }
                 args.push(&base);
 

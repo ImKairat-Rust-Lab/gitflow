@@ -20,3 +20,8 @@ format:
 
 clippy:
 	@cargo clippy --fix
+
+check-release:
+	@cargo test --release
+	@cargo fmt
+	@cargo clippy

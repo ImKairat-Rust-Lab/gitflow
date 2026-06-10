@@ -121,8 +121,9 @@ impl Execute for FeatureAction {
 
                 git::run_hook("pre-flow-feature-finish", &[&name])?;
 
+                let remote = git::get_remote_name();
                 if common.fetch {
-                    git::run_git_silent(&["fetch", "origin"], false)?;
+                    git::run_git_silent(&["fetch", &remote], false)?;
                 }
 
                 // Checkout develop
@@ -130,15 +131,15 @@ impl Execute for FeatureAction {
 
                 // Merge/Rebase/Squash
                 if rebase {
-                    git::run_git_silent(&["rebase", &branch_name], false)?;
+                    git::run_git_interactive(&["rebase", &branch_name], false)?;
                 } else if squash {
-                    git::run_git_silent(&["merge", "--squash", &branch_name], false)?;
-                    git::run_git_silent(
+                    git::run_git_interactive(&["merge", "--squash", &branch_name], false)?;
+                    git::run_git_interactive(
                         &["commit", "-m", &format!("Finish feature {}", name)],
                         false,
                     )?;
                 } else {
-                    git::run_git_silent(&["merge", "--no-ff", &branch_name], false)?;
+                    git::run_git_interactive(&["merge", "--no-ff", &branch_name], false)?;
                 }
 
                 // Delete branch
@@ -158,33 +159,37 @@ impl Execute for FeatureAction {
                 let branch_name = format!("{}{}", config.feature_prefix, name);
                 git::run_hook("pre-flow-feature-publish", &[&name])?;
 
-                git::run_git_silent(&["push", "-u", "origin", &branch_name], false)?;
-                info!("Feature '{}' published to origin", name);
+                let remote = git::get_remote_name();
+                git::run_git_silent(&["push", "-u", &remote, &branch_name], false)?;
+                info!("Feature '{}' published to {}", name, remote);
 
                 git::run_hook("post-flow-feature-publish", &[&name])?;
             }
             Self::Track { name } => {
                 let branch_name = format!("{}{}", config.feature_prefix, name);
+                let remote = git::get_remote_name();
                 git::run_git_silent(
                     &[
                         "checkout",
                         "-b",
                         &branch_name,
-                        &format!("origin/{}", branch_name),
+                        &format!("{}/{}", remote, branch_name),
                     ],
                     false,
                 )?;
-                info!("Now tracking feature '{}' from origin", name);
+                info!("Now tracking feature '{}' from {}", name, remote);
             }
             Self::Pull { name } => {
                 let branch_name = format!("{}{}", config.feature_prefix, name);
+                let remote = git::get_remote_name();
                 git::run_git_silent(&["checkout", &branch_name], false)?;
-                git::run_git_silent(&["pull", "origin", &branch_name], false)?;
-                info!("Feature '{}' updated from origin", name);
+                git::run_git_silent(&["pull", &remote, &branch_name], false)?;
+                info!("Feature '{}' updated from {}", name, remote);
             }
             Self::List { remote } => {
+                let remote_name = git::get_remote_name();
                 let prefix = if remote {
-                    format!("remotes/origin/{}", config.feature_prefix)
+                    format!("remotes/{}/{}", remote_name, config.feature_prefix)
                 } else {
                     config.feature_prefix.clone()
                 };
@@ -205,8 +210,9 @@ impl Execute for FeatureAction {
             } => {
                 let branch_name = format!("{}{}", config.feature_prefix, name);
 
+                let remote_name = git::get_remote_name();
                 if remote {
-                    git::run_git_silent(&["push", "origin", "--delete", &branch_name], false)?;
+                    git::run_git_silent(&["push", &remote_name, "--delete", &branch_name], false)?;
                     info!("Remote branch '{}' deleted", branch_name);
                 }
 
@@ -257,7 +263,7 @@ impl Execute for FeatureAction {
                     args.push("-i");
                 }
                 if preserve_merges {
-                    args.push("-p");
+                    args.push("--rebase-merges");
                 }
                 args.push(&base);
 

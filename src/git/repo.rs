@@ -88,3 +88,7 @@ pub fn list_branches(prefix: &str) -> Result<Vec<String>, AppError> {
     }
     Ok(result)
 }
+
+pub fn get_remote_name() -> String {
+    git_config_get("gitflow.origin").unwrap_or_else(|| "origin".to_string())
+}

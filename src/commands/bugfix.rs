@@ -104,16 +104,17 @@ impl Execute for BugfixAction {
 
                 git::run_hook("pre-flow-bugfix-finish", &[&name])?;
 
+                let remote = git::get_remote_name();
                 if common.fetch {
-                    git::run_git_silent(&["fetch", "origin"], false)?;
+                    git::run_git_silent(&["fetch", &remote], false)?;
                 }
 
                 git::run_git_silent(&["checkout", &config.develop_branch], false)?;
 
                 if rebase {
-                    git::run_git_silent(&["rebase", &branch_name], false)?;
+                    git::run_git_interactive(&["rebase", &branch_name], false)?;
                 } else {
-                    git::run_git_silent(&["merge", "--no-ff", &branch_name], false)?;
+                    git::run_git_interactive(&["merge", "--no-ff", &branch_name], false)?;
                 }
 
                 if !common.keep {
@@ -129,21 +130,23 @@ impl Execute for BugfixAction {
             }
             Self::Publish { name } => {
                 let branch_name = format!("{}{}", config.bugfix_prefix, name);
-                git::run_git_silent(&["push", "-u", "origin", &branch_name], false)?;
-                info!("Bugfix '{}' published to origin", name);
+                let remote = git::get_remote_name();
+                git::run_git_silent(&["push", "-u", &remote, &branch_name], false)?;
+                info!("Bugfix '{}' published to {}", name, remote);
             }
             Self::Track { name } => {
                 let branch_name = format!("{}{}", config.bugfix_prefix, name);
+                let remote = git::get_remote_name();
                 git::run_git_silent(
                     &[
                         "checkout",
                         "-b",
                         &branch_name,
-                        &format!("origin/{}", branch_name),
+                        &format!("{}/{}", remote, branch_name),
                     ],
                     false,
                 )?;
-                info!("Now tracking bugfix '{}' from origin", name);
+                info!("Now tracking bugfix '{}' from {}", name, remote);
             }
             Self::Diff { name } => {
                 let current = git::current_branch()?;
@@ -188,7 +191,7 @@ impl Execute for BugfixAction {
                     args.push("-i");
                 }
                 if preserve_merges {
-                    args.push("-p");
+                    args.push("--rebase-merges");
                 }
                 args.push(&base);
 
@@ -204,9 +207,10 @@ impl Execute for BugfixAction {
             }
             Self::Pull { name } => {
                 let branch_name = format!("{}{}", config.bugfix_prefix, name);
+                let remote = git::get_remote_name();
                 git::run_git_silent(&["checkout", &branch_name], false)?;
-                git::run_git_silent(&["pull", "origin", &branch_name], false)?;
-                info!("Bugfix '{}' updated from origin", name);
+                git::run_git_silent(&["pull", &remote, &branch_name], false)?;
+                info!("Bugfix '{}' updated from {}", name, remote);
             }
             Self::Delete {
                 name,
@@ -214,8 +218,9 @@ impl Execute for BugfixAction {
                 remote,
             } => {
                 let branch_name = format!("{}{}", config.bugfix_prefix, name);
+                let remote_name = git::get_remote_name();
                 if remote {
-                    git::run_git_silent(&["push", "origin", "--delete", &branch_name], false)?;
+                    git::run_git_silent(&["push", &remote_name, "--delete", &branch_name], false)?;
                     info!("Remote branch '{}' deleted", branch_name);
                 }
                 let delete_flag = if force { "-D" } else { "-d" };
@@ -223,8 +228,9 @@ impl Execute for BugfixAction {
                 info!("Local branch '{}' deleted", branch_name);
             }
             Self::List { remote } => {
+                let remote_name = git::get_remote_name();
                 let prefix = if remote {
-                    format!("remotes/origin/{}", config.bugfix_prefix)
+                    format!("remotes/{}/{}", remote_name, config.bugfix_prefix)
                 } else {
                     config.bugfix_prefix.clone()
                 };

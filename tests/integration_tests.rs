@@ -407,3 +407,45 @@ fn test_init_rename_master_to_main() {
     assert!(!branch_exists(dir.path(), "master"));
     assert!(branch_exists(dir.path(), "develop"));
 }
+#[test]
+fn test_custom_remote_name() {
+    let dir = tempdir().expect("Failed to create temp dir");
+    setup_repo(dir.path());
+
+    // Init
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["init", "-d"])
+        .assert()
+        .success();
+
+    // Set custom remote
+    StdCommand::new("git")
+        .args(&["config", "gitflow.origin", "upstream"])
+        .current_dir(dir.path())
+        .output()
+        .unwrap();
+
+    // Start feature
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["feature", "start", "remote-feat"])
+        .assert()
+        .success();
+
+    // Publish feature (it should try to push to 'upstream' and fail because upstream is not a real remote, but the output should mention 'upstream')
+    let output = Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["feature", "publish", "remote-feat"])
+        .output()
+        .expect("Failed to execute command");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("upstream"),
+        "Should use custom remote 'upstream'"
+    );
+}

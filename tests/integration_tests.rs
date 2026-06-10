@@ -281,10 +281,18 @@ fn test_init_no_git_repo() {
     Command::cargo_bin("gitflow")
         .unwrap()
         .current_dir(dir.path())
+        .env("GIT_AUTHOR_NAME", "Gitflow")
+        .env("GIT_AUTHOR_EMAIL", "gitflow@localhost")
+        .env("GIT_COMMITTER_NAME", "Gitflow")
+        .env("GIT_COMMITTER_EMAIL", "gitflow@localhost")
         .arg("init")
         .arg("-d")
         .assert()
-        .failure();
+        .success();
+
+    assert_eq!(get_current_branch(dir.path()), "develop");
+    assert!(branch_exists(dir.path(), "main"));
+    assert!(branch_exists(dir.path(), "develop"));
 }
 
 #[test]
@@ -348,4 +356,96 @@ fn test_feature_extended_actions() {
         .args(&["feature", "checkout", "extended-feat"])
         .assert()
         .success();
+}
+
+#[test]
+fn test_init_rename_master_to_main() {
+    let dir = tempdir().expect("Failed to create temp dir");
+
+    // Setup repo manually with 'master' branch
+    StdCommand::new("git")
+        .args(&["init", "-b", "master"])
+        .current_dir(dir.path())
+        .output()
+        .expect("Failed to init repo");
+
+    StdCommand::new("git")
+        .args(&["config", "user.email", "test@example.com"])
+        .current_dir(dir.path())
+        .output()
+        .expect("Failed to set email");
+
+    StdCommand::new("git")
+        .args(&["config", "user.name", "Test User"])
+        .current_dir(dir.path())
+        .output()
+        .expect("Failed to set name");
+
+    std::fs::write(dir.path().join("README.md"), "test").unwrap();
+    StdCommand::new("git")
+        .args(&["add", "."])
+        .current_dir(dir.path())
+        .output()
+        .unwrap();
+    StdCommand::new("git")
+        .args(&["commit", "-m", "Initial commit"])
+        .current_dir(dir.path())
+        .output()
+        .unwrap();
+
+    // Now initialize gitflow with '-d' (default uses 'main')
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .arg("init")
+        .arg("-d")
+        .assert()
+        .success();
+
+    assert_eq!(get_current_branch(dir.path()), "develop");
+    assert!(branch_exists(dir.path(), "main"));
+    assert!(!branch_exists(dir.path(), "master"));
+    assert!(branch_exists(dir.path(), "develop"));
+}
+#[test]
+fn test_custom_remote_name() {
+    let dir = tempdir().expect("Failed to create temp dir");
+    setup_repo(dir.path());
+
+    // Init
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["init", "-d"])
+        .assert()
+        .success();
+
+    // Set custom remote
+    StdCommand::new("git")
+        .args(&["config", "gitflow.origin", "upstream"])
+        .current_dir(dir.path())
+        .output()
+        .unwrap();
+
+    // Start feature
+    Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["feature", "start", "remote-feat"])
+        .assert()
+        .success();
+
+    // Publish feature (it should try to push to 'upstream' and fail because upstream is not a real remote, but the output should mention 'upstream')
+    let output = Command::cargo_bin("gitflow")
+        .unwrap()
+        .current_dir(dir.path())
+        .args(&["feature", "publish", "remote-feat"])
+        .output()
+        .expect("Failed to execute command");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("upstream"),
+        "Should use custom remote 'upstream'"
+    );
 }

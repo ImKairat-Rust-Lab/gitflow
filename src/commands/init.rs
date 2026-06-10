@@ -120,6 +120,47 @@ impl Execute for InitArgs {
             )
         };
 
+        // Initialize git repository if it doesn't exist
+        if git::get_repo_root().is_err() {
+            tracing::info!("Initializing empty Git repository...");
+            git::run_git_silent(&["init", "-b", &main_branch], false)?;
+        } else {
+            // Handle existing repository branch renaming for main/master
+            if main_branch == "main" || main_branch == "master" {
+                let alternative_branch = if main_branch == "main" {
+                    "master"
+                } else {
+                    "main"
+                };
+                if !git::branch_exists(&main_branch) && git::branch_exists(alternative_branch) {
+                    tracing::info!(
+                        "Renaming branch '{}' to '{}'...",
+                        alternative_branch,
+                        main_branch
+                    );
+                    git::run_git_silent(
+                        &["branch", "-m", alternative_branch, &main_branch],
+                        false,
+                    )?;
+                }
+            }
+        }
+
+        // If the repository is empty (no commits), create an initial commit
+        if git::run_git(&["rev-parse", "HEAD"], false).is_err() {
+            tracing::info!("Creating initial commit...");
+            // Ensure we are on the chosen main branch before committing
+            git::run_git_silent(
+                &[
+                    "symbolic-ref",
+                    "HEAD",
+                    &format!("refs/heads/{}", main_branch),
+                ],
+                false,
+            )?;
+            git::run_git_silent(&["commit", "--allow-empty", "-m", "Initial commit"], false)?;
+        }
+
         // 2. Persist all settings to .git/config using `git config --local`
         let config_entries = [
             ("gitflow.branch.main", &main_branch),

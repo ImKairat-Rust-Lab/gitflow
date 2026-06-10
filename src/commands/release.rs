@@ -101,13 +101,14 @@ impl Execute for ReleaseAction {
 
                 git::run_hook("pre-flow-release-finish", &[&version])?;
 
+                let remote = git::get_remote_name();
                 if common.fetch {
-                    git::run_git_silent(&["fetch", "origin"], false)?;
+                    git::run_git_silent(&["fetch", &remote], false)?;
                 }
 
                 // Merge into main
                 git::run_git_silent(&["checkout", &config.main_branch], false)?;
-                git::run_git_silent(&["merge", "--no-ff", &branch_name], false)?;
+                git::run_git_interactive(&["merge", "--no-ff", &branch_name], false)?;
 
                 // Tag
                 if !tagging.notag {
@@ -124,12 +125,12 @@ impl Execute for ReleaseAction {
                     tag_args.push(tag_name.clone());
 
                     let tag_args_refs: Vec<&str> = tag_args.iter().map(|s| s.as_str()).collect();
-                    git::run_git_silent(&tag_args_refs, false)?;
+                    git::run_git_interactive(&tag_args_refs, false)?;
                 }
 
                 // Merge into develop
                 git::run_git_silent(&["checkout", &config.develop_branch], false)?;
-                git::run_git_silent(&["merge", "--no-ff", &branch_name], false)?;
+                git::run_git_interactive(&["merge", "--no-ff", &branch_name], false)?;
 
                 // Delete branch
                 if !common.keep {
@@ -137,10 +138,11 @@ impl Execute for ReleaseAction {
                 }
 
                 if push {
-                    git::run_git_silent(&["push", "origin", &config.main_branch], false)?;
-                    git::run_git_silent(&["push", "origin", &config.develop_branch], false)?;
+                    let remote = git::get_remote_name();
+                    git::run_git_silent(&["push", &remote, &config.main_branch], false)?;
+                    git::run_git_silent(&["push", &remote, &config.develop_branch], false)?;
                     if !tagging.notag {
-                        git::run_git_silent(&["push", "origin", &tag_name], false)?;
+                        git::run_git_silent(&["push", &remote, &tag_name], false)?;
                     }
                 }
 
@@ -153,8 +155,9 @@ impl Execute for ReleaseAction {
             }
             Self::Publish { version } => {
                 let branch_name = format!("{}{}", config.release_prefix, version);
-                git::run_git_silent(&["push", "-u", "origin", &branch_name], false)?;
-                info!("Release '{}' published to origin", version);
+                let remote = git::get_remote_name();
+                git::run_git_silent(&["push", "-u", &remote, &branch_name], false)?;
+                info!("Release '{}' published to {}", version, remote);
             }
             Self::Delete {
                 version,
@@ -163,8 +166,9 @@ impl Execute for ReleaseAction {
             } => {
                 let branch_name = format!("{}{}", config.release_prefix, version);
 
+                let remote_name = git::get_remote_name();
                 if remote {
-                    git::run_git_silent(&["push", "origin", "--delete", &branch_name], false)?;
+                    git::run_git_silent(&["push", &remote_name, "--delete", &branch_name], false)?;
                 }
 
                 let delete_flag = if force { "-D" } else { "-d" };
@@ -173,16 +177,17 @@ impl Execute for ReleaseAction {
             }
             Self::Track { name } => {
                 let branch_name = format!("{}{}", config.release_prefix, name);
+                let remote = git::get_remote_name();
                 git::run_git_silent(
                     &[
                         "checkout",
                         "-b",
                         &branch_name,
-                        &format!("origin/{}", branch_name),
+                        &format!("{}/{}", remote, branch_name),
                     ],
                     false,
                 )?;
-                info!("Now tracking release '{}' from origin", name);
+                info!("Now tracking release '{}' from {}", name, remote);
             }
             Self::List { verbose: _ } => {
                 let prefix = config.release_prefix.clone();
@@ -222,7 +227,7 @@ impl Execute for ReleaseAction {
                     args.push("-i");
                 }
                 if preserve_merges {
-                    args.push("-p");
+                    args.push("--rebase-merges");
                 }
                 args.push(&base);
 
